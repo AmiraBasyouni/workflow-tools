@@ -1,38 +1,45 @@
-import verbs from "./verbs";
+import { Workflow, Segment } from "./types.js";
 
-function throwError({ condition, verb, message }) {
-  if (condition) {
-    // capture verb as a string for error messages
-    const verbString = verb.join(" ");
-    const errorMessage = `Invalid verb: "${verbString}". ` + message;
-    throw new Error(errorMessage);
-  }
+import verbs from "./verbs.js";
+
+function getErrorMessage({
+  verb,
+  message,
+}: {
+  verb: string[];
+  message: string;
+}) {
+  // capture verb as a string for error messages
+  const verbString = verb.join(" ");
+  const errorMessage = `Invalid verb: "${verbString}". ` + message;
+  return errorMessage;
 }
 
-function resolver(verb: string[]) {
-  let resolveWorkflow = verbs;
-  let workflow = {};
-  let params = [];
+function resolver(verb: string[]): { workflow: Workflow; params: string[] } {
+  let currentNode: Segment = verbs;
+  // traverse segments until workflow is found
   for (let i = 0; i < verb.length; i++) {
-    const word = verb[i];
-    resolveWorkflow = resolveWorkflow[word];
-    throwError({
-      condition: !resolveWorkflow,
-      message: "The verb does not exist.",
-      verb,
-    });
-    if (resolveWorkflow.isWorkflow) {
-      workflow = resolveWorkflow;
-      params = verb.slice(i + 1);
-      break;
+    const segment: string = verb[i];
+    const nextNode: Segment | Workflow = currentNode.children[segment];
+    if (typeof nextNode === "undefined") {
+      const errorMessage = getErrorMessage({
+        verb,
+        message: "The provided verb does not exist.",
+      });
+      throw new Error(errorMessage);
+    } else if (nextNode.nodeType === "workflow") {
+      const workflow: Workflow = nextNode;
+      const params: string[] = verb.slice(i + 1);
+      return { workflow, params };
+    } else {
+      currentNode = nextNode;
     }
   }
-  throwError({
-    condition: !workflow.isWorkflow,
-    message: "The verb does not map to a workflow.",
+  const errorMessage = getErrorMessage({
     verb,
+    message: "The provided verb does not map to a workflow.",
   });
-  return { workflow, params };
+  throw new Error(errorMessage);
 }
 
 export default resolver;

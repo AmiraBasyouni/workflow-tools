@@ -1,4 +1,6 @@
-import verifier from "./verifier";
+import { Context, Workflow } from "./types.js";
+
+import verifier from "./verifier.js";
 
 function executor({
   context,
@@ -9,7 +11,7 @@ function executor({
 }) {
   // INPUT VALIDATION
   const response = verifier({ context, workflow });
-  if (response === "ok") {
+  if (response.status === "ok") {
     console.log({ context });
     console.log({ workflow });
   } else {

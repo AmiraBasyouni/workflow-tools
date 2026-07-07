@@ -1,6 +1,11 @@
+type Segment = {
+  nodeType: "segment";
+  children: {[key: string]: Segment | Workflow}
+};
+
 type Workflow = {
-  isWorkflow: boolean;
-  requirenments: Requirenment[];
+  nodeType: "workflow";
+  requirements: Requirement[];
   params?: string[];
   steps: string[];
 };
@@ -10,8 +15,8 @@ type Context = {
   cwd: string;
 };
 
-type Requirenment = {
-  type: string;
-};
+type Requirement = Program;
 
-export { Workflow, Context, Requirenment };
+type Program = { type: "program"; program: string; installation: string };
+
+export { Segment, Workflow, Context, Requirement };

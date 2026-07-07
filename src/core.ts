@@ -1,14 +1,14 @@
-import { isValidCWD } from "./verifier";
-import resolver from "./resolver";
-import executor from "./executor";
+import { isValidCWD } from "./verifier.js";
+import resolver from "./resolver.js";
+import executor from "./executor.js";
 
 function core(cwd: string, args: string[]) {
   // INPUT VALIDATION
   isValidCWD(cwd);
-  const { workflow, params }: { Workflow; Params } = resolver(args);
+  const { workflow, params } = resolver(args);
 
   // CORE LOGIC
-  const context: Context = { params, cwd };
+  const context = { params, cwd };
   executor({ context, workflow });
 }
 
