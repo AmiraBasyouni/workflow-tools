@@ -11,7 +11,7 @@ const verbs: Segment = {
           installation: "sudo apt install git",
         },
       ],
-      steps: ["git list"],
+      steps: ["git branch"],
     },
   },
 };
