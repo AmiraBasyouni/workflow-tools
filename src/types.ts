@@ -1,10 +1,10 @@
 type Segment = {
-  nodeType: "segment";
-  children: {[key: string]: Segment | Workflow}
+  //  This explicitly forbids the key "isWorkflow" from being a segment
+  [key in string as key extends "isWorkflow" ? never : key]: Segment | Workflow;
 };
 
 type Workflow = {
-  nodeType: "workflow";
+  isWorkflow: true;
   requirements: Requirement[];
   params?: string[];
   steps: string[];
