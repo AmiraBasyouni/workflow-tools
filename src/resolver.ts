@@ -9,7 +9,7 @@ function getErrorMessage({
   verb: string[];
   message: string;
 }) {
-  // capture verb as a string for error messages
+  // Capture verb as a string.
   const verbString = verb.join(" ");
   const errorMessage = `Invalid verb: "${verbString}". ` + message;
   return errorMessage;
@@ -17,28 +17,28 @@ function getErrorMessage({
 
 function resolver(verb: string[]): { workflow: Workflow; params: string[] } {
   let currentNode: Segment = verbs;
-  // traverse segments until workflow is found
+  // Traverse segments until workflow is found.
   for (let i = 0; i < verb.length; i++) {
-    const segment: string = verb[i];
+    const segment = verb[i];
     const nextNode: Segment | Workflow = currentNode[segment];
     if (typeof nextNode === "undefined") {
-      // it's undefined
+      // It's undefined, throw an error.
       const errorMessage = getErrorMessage({
         verb,
         message: "The provided verb does not exist.",
       });
       throw new Error(errorMessage);
     } else if ("isWorkflow" in nextNode) {
-      // it's a workflow
+      // It's a workflow, return workflow and params.
       const workflow: Workflow = nextNode as Workflow;
       const params: string[] = verb.slice(i + 1);
       return { workflow, params };
     } else {
-      // it's a segment
+      // It's a segment, traverse next segment.
       currentNode = nextNode;
     }
   }
-  // ended on a segment
+  // Ended on a segment, throw an error.
   const errorMessage = getErrorMessage({
     verb,
     message: "The provided verb does not map to a workflow.",
