@@ -1,13 +1,13 @@
 type Segment = {
-  //  This explicitly forbids the key "isWorkflow" from being a segment
-  [key in string as key extends "isWorkflow" ? never : key]: Segment | Workflow;
+  workflow?: Workflow;
+  [seg: string]: Segment | Workflow | undefined;
 };
 
 type Workflow = {
-  isWorkflow: true;
+  name: string;
   requirements: Requirement[];
   params?: string[];
-  steps: string[];
+  steps: Process[];
 };
 
 type Context = {
@@ -15,8 +15,20 @@ type Context = {
   cwd: string;
 };
 
-type Requirement = Program;
+interface Requirement {
+  type: string;
+  description: string;
+  verificationSteps: Process[];
+  instructions: string[];
+}
 
-type Program = { type: "program"; program: string; installation: string };
+type Process = {
+  type: "process";
+  program: string;
+  args: string[];
+  timeout?: number;
+};
 
-export { Segment, Workflow, Context, Requirement };
+type Step = Process;
+
+export { Segment, Workflow, Context, Requirement, Step };

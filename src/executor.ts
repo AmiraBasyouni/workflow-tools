@@ -1,8 +1,23 @@
-import { Context, Workflow } from "./types.js";
+import { Context, Workflow, Requirement } from "./types.js";
 
-import verifier from "./verifier.js";
+import verify from "./verify.js";
+import runtime from "./runtime.js";
 
-function executor({
+function failedRequirementsError(
+  failedRequirements: Requirement[],
+  workflowName: string,
+) {
+  const message = `Error: Failed to run workflow ${workflowName}, requirements not met:`;
+  const list = "";
+  failedRequirements.forEach((failedRequirement) => {
+    list.concat(
+      `- ${failedRequirement.description}. ${failedRequirement.instructions}`,
+    );
+  });
+  return message + list;
+}
+
+async function executor({
   context,
   workflow,
 }: {
@@ -10,12 +25,17 @@ function executor({
   workflow: Workflow;
 }) {
   // INPUT VALIDATION
-  const response = verifier({ context, workflow });
-  if (response.status === "ok") {
-    console.log({ context });
-    console.log({ workflow });
+  const verification = await verify.workflowRequirements({ context, workflow });
+  if (verification.allArePassing) {
+    runtime({ context, workflow });
+  } else if (verification.failedRequirements) {
+    const message = failedRequirementsError(
+      verification.failedRequirements,
+      workflow.name,
+    );
+    throw new Error(message);
   } else {
-    throw new Error(response.errorMessage);
+    throw new Error("Something went wrong. Module: executor.");
   }
 }
 

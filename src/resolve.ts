@@ -15,12 +15,19 @@ function getErrorMessage({
   return errorMessage;
 }
 
-function resolver(verb: string[]): { workflow: Workflow; params: string[] } {
+function resolve(verb: string[]): { workflow: Workflow; params: string[] } {
   let currentNode: Segment = verbs;
   // Traverse segments until workflow is found.
   for (let i = 0; i < verb.length; i++) {
     const segment = verb[i];
-    const nextNode: Segment | Workflow = currentNode[segment];
+    if (segment === "workflow") {
+      const errorMessage = getErrorMessage({
+        verb,
+        message: 'The key "workflow" is reserved.',
+      });
+      throw new Error(errorMessage);
+    }
+    const nextNode = currentNode[segment] as Segment | undefined;
     if (typeof nextNode === "undefined") {
       // It's undefined, throw an error.
       const errorMessage = getErrorMessage({
@@ -28,9 +35,9 @@ function resolver(verb: string[]): { workflow: Workflow; params: string[] } {
         message: "The provided verb does not exist.",
       });
       throw new Error(errorMessage);
-    } else if ("isWorkflow" in nextNode) {
+    } else if ("workflow" in nextNode && nextNode.workflow) {
       // It's a workflow, return workflow and params.
-      const workflow: Workflow = nextNode as Workflow;
+      const workflow = nextNode.workflow;
       const params: string[] = verb.slice(i + 1);
       return { workflow, params };
     } else {
@@ -46,4 +53,4 @@ function resolver(verb: string[]): { workflow: Workflow; params: string[] } {
   throw new Error(errorMessage);
 }
 
-export default resolver;
+export default resolve;

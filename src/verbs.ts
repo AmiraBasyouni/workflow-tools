@@ -3,15 +3,20 @@ import { Segment } from "./types.js";
 const verbs: Segment = {
   branch: {
     list: {
-      isWorkflow: true,
-      requirements: [
-        {
-          type: "program",
-          program: "git",
-          installation: "sudo apt install git",
-        },
-      ],
-      steps: ["git branch"],
+      workflow: {
+        name: "branch list",
+        requirements: [
+          {
+            type: "program",
+            description: "git is installed",
+            verificationSteps: [
+              { type: "process", program: "git", args: ["--version"] },
+            ],
+            instructions: ["sudo apt install git"],
+          },
+        ],
+        steps: [{ type: "process", program: "git", args: ["branch"] }],
+      },
     },
   },
 };
