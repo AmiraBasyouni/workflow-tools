@@ -34,7 +34,7 @@ const verify = {
     // Validate all requirements asynchronously:
     const promises = workflow.requirements.map(async (requirement) => {
       const response = await process.runSteps(requirement.verificationSteps);
-      if (response.success) {
+      if (response.successful) {
         return { requirement, passing: true };
       } else {
         allArePassing = false;
@@ -46,12 +46,12 @@ const verify = {
     // The order of each requirement status matches the original array, not the completion order.
     const statuses = await Promise.all(promises);
     const failedRequirements = statuses
-      .filter((req) => req.passing === false)
+      .filter((req) => !req.passing)
       .map((req) => req.requirement);
 
     return {
       allArePassing,
-      failedRequirements: allArePassing ? undefined : failedRequirements,
+      failedRequirements: allArePassing && failedRequirements.length === 0 ? undefined : failedRequirements,
     };
   },
 };

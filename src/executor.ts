@@ -11,7 +11,7 @@ function failedRequirementsError(
   const list = "";
   failedRequirements.forEach((failedRequirement) => {
     list.concat(
-      `- ${failedRequirement.description}. ${failedRequirement.instructions}`,
+      `- ${failedRequirement.description}. ${failedRequirement.fulfillmentInstructions}`,
     );
   });
   return message + list;
@@ -25,7 +25,7 @@ async function executor({
   workflow: Workflow;
 }) {
   // INPUT VALIDATION
-  const verification = await verify.workflowRequirements({ context, workflow });
+  const verification = await verify.workflowRequirements({ workflow, context });
   if (verification.allArePassing) {
     runtime({ context, workflow });
   } else if (verification.failedRequirements) {

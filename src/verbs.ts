@@ -12,7 +12,7 @@ const verbs: Segment = {
             verificationSteps: [
               { type: "process", program: "git", args: ["--version"] },
             ],
-            instructions: ["sudo apt install git"],
+            fulfillmentInstructions: ["sudo apt install git"],
           },
         ],
         steps: [{ type: "process", program: "git", args: ["branch"] }],

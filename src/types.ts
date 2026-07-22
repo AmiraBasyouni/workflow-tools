@@ -1,3 +1,5 @@
+import { StdinOption, InputOption, Result, ResultPromise } from "./typesExeca.js";
+
 type Segment = {
   workflow?: Workflow;
   [seg: string]: Segment | Workflow | undefined;
@@ -19,16 +21,25 @@ interface Requirement {
   type: string;
   description: string;
   verificationSteps: Process[];
-  instructions: string[];
+  fulfillmentInstructions: string[];
 }
 
 type Process = {
   type: "process";
   program: string;
   args: string[];
-  timeout?: number;
+  options: ProcessOptions;
 };
 
-type Step = Process;
+type ProcessOptions = {
+  timeout?: number;
+  pipe?: "stream" | "buffer";
+  input?: StdinOption | InputOption;
+  prevResult: Result | undefined;
+  prevResultPromise: ResultPromise | undefined;
+}
 
-export { Segment, Workflow, Context, Requirement, Step };
+type Step = Process;
+type StepOptions = ProcessOptions;
+
+export { Segment, Workflow, Context, Requirement, Step, StepOptions };
