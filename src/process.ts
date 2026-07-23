@@ -1,20 +1,30 @@
 import { Step, StepOptions } from "./types.js";
-import { Result, ResultPromise } from "./typesExeca.js";
+import { Result, ResultPromise } from "execa";
 
 import { execa } from "execa";
+import verify from "./verify.js";
 
 const process = {
   async runSteps(steps: Step[]) {
-    // Cache previous result and previous result promise:
+    // CACHE previous result and previous result promise:
     let prevStepResult: Result | undefined = undefined;
     let prevStepResultPromise: ResultPromise | undefined = undefined;
-    // Go through the steps array:
+    // ITERATE steps array:
     for (let i = 0; i < steps.length; i++) {
       const currentStep = steps[i];
       const { program, args, options } = currentStep;
       let resultPromise: ResultPromise | undefined = undefined;
       try {
-        // Run a step, capture result promise:
+        // VALIDATE step:
+        const { valid, warnings } = verify.stepValidity(currentStep);
+        if (!valid) {
+          // Warnings array as a string: "warning_1, warning_2, ...":
+          return {
+            successful: false,
+            message: `Invalid step: ${currentStep}. Warnings: ${warnings?.toString()}.`,
+          };
+        }
+        // RUN step, capture result promise:
         switch (options.pipe) {
           case "stream": {
             resultPromise = process.runStep(program, args, {

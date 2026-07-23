@@ -1,4 +1,4 @@
-import { StdinOption, InputOption, Result, ResultPromise } from "./typesExeca.js";
+import { Result, ResultPromise } from "execa";
 
 type Segment = {
   workflow?: Workflow;
@@ -34,11 +34,11 @@ type Process = {
 type ProcessOptions = {
   timeout?: number;
   pipe?: "stream" | "buffer";
-  input?: StdinOption | InputOption;
   prevResult: Result | undefined;
   prevResultPromise: ResultPromise | undefined;
 }
 
+// We'll expand the Step type: Step = Process | Prompt | Filesystem.
 type Step = Process;
 type StepOptions = ProcessOptions;
 

@@ -1,4 +1,4 @@
-import { Context, Workflow } from "./types.js";
+import { Context, Workflow, Step } from "./types.js";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -51,8 +51,50 @@ const verify = {
 
     return {
       allArePassing,
-      failedRequirements: allArePassing && failedRequirements.length === 0 ? undefined : failedRequirements,
+      failedRequirements:
+        allArePassing && failedRequirements.length === 0
+          ? undefined
+          : failedRequirements,
     };
+  },
+  stepValidity(step: Step) {
+    const warnings: string[] = [];
+    // Verify type:
+    const stepType = step.type;
+    if (stepType && typeof stepType != "string" ) {
+      warnings.push("invalid type");
+    }
+    // Verify program:
+    const stepProgram = step.program;
+    if (!stepProgram || typeof stepProgram != "string") {
+      warnings.push("invalid program");
+    }
+    // Verify args:
+    const stepArgs = step.args;
+    if (stepArgs && !Array.isArray(stepArgs)) {
+      warnings.push("invalid arguments");
+    }
+    // Verify step options: pipe and timeout.
+    const stepOptions = step.options;
+    if (stepOptions.timeout && typeof stepOptions.timeout != "number"){
+	    warnings.push("invalid timeout");
+    }
+    if (stepOptions.pipe) {
+      switch (stepOptions.pipe) {
+        case "stream":
+        case "buffer":
+        case undefined:
+          break;
+        default:
+          warnings.push(`invalid pipe option: ${stepOptions.pipe}`);
+      }
+    }
+    // return validity
+    if (warnings.length > 0) {
+      return { valid: false, warnings };
+    } else {
+      return { valid: true };
+    }
   },
 };
 
