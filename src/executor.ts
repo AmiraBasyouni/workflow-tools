@@ -3,7 +3,7 @@ import { Context, Workflow, Requirement } from "./types.js";
 import verify from "./verify.js";
 import runtime from "./runtime.js";
 
-function failedRequirementsError(
+function handleFailedRequirements(
   failedRequirements: Requirement[],
   workflowName: string,
 ) {
@@ -26,16 +26,23 @@ async function executor({
 }) {
   // INPUT VALIDATION
   const verification = await verify.workflowRequirements({ workflow, context });
-  if (verification.allArePassing) {
-    runtime({ context, workflow });
-  } else if (verification.failedRequirements) {
-    const message = failedRequirementsError(
+
+  // ERROR HANDLING
+  if (!verification.allArePassing && verification.failedRequirements) {
+    const errorMessage = handleFailedRequirements(
       verification.failedRequirements,
       workflow.name,
     );
-    throw new Error(message);
-  } else {
-    throw new Error("Something went wrong. Module: executor.");
+    throw new Error(errorMessage);
+  } else if (!verification.allArePassing && !verification.failedRequirements) {
+    throw new Error(
+      "Workflow requirements are not passing, but failed requirements can't be detected.",
+    );
+  }
+
+  // CORE LOGIC
+  if (verification.allArePassing) {
+    runtime({ context, workflow });
   }
 }
 
