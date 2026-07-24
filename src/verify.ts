@@ -5,23 +5,31 @@ import path from "node:path";
 import process from "./process.js";
 
 const verify = {
-  isValidCWD(cwd: string): boolean {
+  cwdValidity(cwd: string) {
+    if (typeof cwd != "string") {
+      const error = `Invalid cwd. A cwd must be of type string, received type ${typeof cwd}.`;
+      return { isValidCWD: false, error };
+    }
+
+    if (cwd === "") {
+      const error = `Invalid cwd. The provided cwd is an empty string.`;
+      return { isValidCWD: false, error };
+    }
+
     const resolvedPath = path.resolve(cwd);
     const stat = fs.statSync(resolvedPath);
 
     if (!stat.isDirectory()) {
-      throw new Error(
-        `Invalid cwd: ${cwd}. The provided cwd is not a directory.`,
-      );
-      return false;
+      const error = `Invalid cwd: ${cwd}. The provided cwd is not a directory.`;
+      return { isValidCWD: false, error };
     }
 
     if (!fs.existsSync(resolvedPath)) {
-      throw new Error(`Invalid cwd: ${cwd}. The provided cwd does not exist.`);
-      return false;
+      const error = `Invalid cwd: ${cwd}. The provided cwd does not exist.`;
+      return { isValidCWD: false, error };
     }
 
-    return true;
+    return { isValidCWD: true };
   },
   async workflowRequirements({
     context,
@@ -61,7 +69,7 @@ const verify = {
     const warnings: string[] = [];
     // Verify type:
     const stepType = step.type;
-    if (stepType && typeof stepType != "string" ) {
+    if (stepType && typeof stepType != "string") {
       warnings.push("invalid type");
     }
     // Verify program:
@@ -76,8 +84,8 @@ const verify = {
     }
     // Verify step options: pipe and timeout.
     const stepOptions = step.options;
-    if (stepOptions.timeout && typeof stepOptions.timeout != "number"){
-	    warnings.push("invalid timeout");
+    if (stepOptions.timeout && typeof stepOptions.timeout != "number") {
+      warnings.push("invalid timeout");
     }
     if (stepOptions.pipe) {
       switch (stepOptions.pipe) {
