@@ -49,7 +49,8 @@ const process = {
 
         // Resolve result promise:
         if (options.pipe === "buffer" || !options.pipe) {
-          const { result, error } = await resolveResultPromise(resultPromise);
+          const { result, error } =
+            await process.util.resolveResultPromise(resultPromise);
           if (result) {
             prevStepResult = result;
             prevStepResultPromise = undefined;
@@ -95,21 +96,21 @@ const process = {
 
     return resultPromise;
   },
+  util: {
+    async resolveResultPromise(resultPromise: ResultPromise) {
+      const resultOrError = await resultPromise;
+      const response: {
+        result: undefined | Result;
+        error: undefined | Result;
+      } = { result: undefined, error: undefined };
+      if (resultOrError.failed) {
+        response.error = resultOrError;
+      } else {
+        response.result = resultOrError;
+      }
+      return response;
+    },
+  },
 };
-
-// Resolve result promise:
-async function resolveResultPromise(resultPromise: ResultPromise) {
-  const resultOrError = await resultPromise;
-  const response: {
-    result: undefined | Result;
-    error: undefined | Result;
-  } = { result: undefined, error: undefined };
-  if (resultOrError.failed) {
-    response.error = resultOrError;
-  } else {
-    response.result = resultOrError;
-  }
-  return response;
-}
 
 export default process;
