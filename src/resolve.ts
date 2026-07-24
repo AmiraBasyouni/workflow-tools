@@ -15,7 +15,9 @@ function getErrorMessage({
   return errorMessage;
 }
 
-function resolve(verb: string[]): { workflow: Workflow; params: string[] } {
+function resolve(
+  verb: string[],
+): { workflow: Workflow; params: string[] } | { error: string } {
   let currentNode: Segment = verbs;
   // Traverse segments until workflow is found.
   for (let i = 0; i < verb.length; i++) {
@@ -25,7 +27,7 @@ function resolve(verb: string[]): { workflow: Workflow; params: string[] } {
         verb,
         message: 'The key "workflow" is reserved.',
       });
-      throw new Error(errorMessage);
+      return { error: errorMessage };
     }
     const nextNode = currentNode[segment] as Segment | undefined;
     if (typeof nextNode === "undefined") {
@@ -34,7 +36,7 @@ function resolve(verb: string[]): { workflow: Workflow; params: string[] } {
         verb,
         message: "The provided verb does not exist.",
       });
-      throw new Error(errorMessage);
+      return { error: errorMessage };
     } else if ("workflow" in nextNode && nextNode.workflow) {
       // It's a workflow, return workflow and params.
       const workflow = nextNode.workflow;
@@ -50,7 +52,7 @@ function resolve(verb: string[]): { workflow: Workflow; params: string[] } {
     verb,
     message: "The provided verb does not map to a workflow.",
   });
-  throw new Error(errorMessage);
+  return { error: errorMessage };
 }
 
 export default resolve;
