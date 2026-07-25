@@ -21,11 +21,11 @@ const process = {
           // Warnings array as a string: "warning_1, warning_2, ...":
           return {
             successful: false,
-            message: `Invalid step: ${currentStep}. Warnings: ${warnings?.toString()}.`,
+            errorMessage: `Invalid step: ${currentStep}. Warnings: ${warnings?.toString()}.`,
           };
         }
         // RUN step, capture result promise:
-        switch (options.pipe) {
+        switch (options?.pipe) {
           case "stream": {
             resultPromise = process.runStep(program, args, {
               ...options,
@@ -48,7 +48,7 @@ const process = {
         }
 
         // Resolve result promise:
-        if (options.pipe === "buffer" || !options.pipe) {
+        if (options?.pipe === "buffer" || !options?.pipe) {
           const { result, error } =
             await process.util.resolveResultPromise(resultPromise);
           if (result) {
@@ -61,7 +61,7 @@ const process = {
             prevStepResultPromise = undefined;
             return {
               successful: false,
-              message: `Failed to execute ${currentStep}. Error: ${error.message}`,
+              errorMessage: `Failed to execute ${currentStep}. Error: ${error.message}`,
             };
           }
         }
@@ -69,7 +69,7 @@ const process = {
       } catch (error) {
         return {
           successful: false,
-          message: `Failed to execute ${currentStep}. Error: ${error}`,
+          errorMessage: `Failed to execute ${currentStep}. Error: ${error}`,
         };
       }
     }

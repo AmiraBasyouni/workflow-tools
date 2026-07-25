@@ -28,7 +28,7 @@ type Process = {
   type: "process";
   program: string;
   args: string[];
-  options: ProcessOptions;
+  options?: ProcessOptions;
 };
 
 type ProcessOptions = {
@@ -36,7 +36,7 @@ type ProcessOptions = {
   pipe?: "stream" | "buffer";
   prevResult: Result | undefined;
   prevResultPromise: ResultPromise | undefined;
-}
+};
 
 // We'll expand the Step type: Step = Process | Prompt | Filesystem.
 type Step = Process;

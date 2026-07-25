@@ -84,17 +84,17 @@ const verify = {
     }
     // Verify step options: pipe and timeout.
     const stepOptions = step.options;
-    if (stepOptions.timeout && typeof stepOptions.timeout != "number") {
+    if (stepOptions?.timeout && typeof stepOptions?.timeout != "number") {
       warnings.push("invalid timeout");
     }
-    if (stepOptions.pipe) {
+    if (stepOptions?.pipe) {
       switch (stepOptions.pipe) {
         case "stream":
         case "buffer":
         case undefined:
           break;
         default:
-          warnings.push(`invalid pipe option: ${stepOptions.pipe}`);
+          warnings.push(`invalid pipe option: ${stepOptions?.pipe}`);
       }
     }
     // return validity
