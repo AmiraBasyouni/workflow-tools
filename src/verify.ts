@@ -1,11 +1,11 @@
-import { Context, Workflow, Step } from "./types.js";
+import { Context, Workflow } from "./types.js";
 
 import fs from "node:fs";
 import path from "node:path";
 import process from "./process.js";
 
 const verify = {
-  cwdValidity(cwd: string) {
+  cwdValidity(cwd: unknown) {
     if (typeof cwd != "string") {
       const error = `Invalid cwd. A cwd must be of type string, received type ${typeof cwd}.`;
       return { isValidCWD: false, error };
@@ -65,43 +65,78 @@ const verify = {
           : failedRequirements,
     };
   },
-  stepValidity(step: Step) {
-    const warnings: string[] = [];
-    // Verify type:
-    const stepType = step.type;
-    if (stepType && typeof stepType != "string") {
-      warnings.push("invalid type");
+  stepValidity(step: unknown) {
+    const errors = {
+      invalidStep: false,
+      invalidType: false,
+      invalidProgram: false,
+      invalidArguments: false,
+      invalidOptions: false,
+      invalidTimeout: false,
+      invalidPipeOption: false,
+    };
+    const errorMessages: string[] = [];
+    // Verify type of step:
+    if (!step || typeof step != "object") {
+      errors.invalidStep = true;
+      errorMessages.push(`invalid step: ${step}`);
+      return { valid: false, errors, errorMessages };
     }
-    // Verify program:
-    const stepProgram = step.program;
-    if (!stepProgram || typeof stepProgram != "string") {
-      warnings.push("invalid program");
+    const { type, program, args, options } = step as {
+      type?: unknown;
+      program?: unknown;
+      args?: unknown;
+      options?: unknown;
+    };
+    // Verify step type:
+    if (!type || typeof type != "string") {
+      errorMessages.push(`invalid type: ${type}`);
+      errors.invalidType = true;
     }
-    // Verify args:
-    const stepArgs = step.args;
-    if (stepArgs && !Array.isArray(stepArgs)) {
-      warnings.push("invalid arguments");
+    // Verify step program:
+    if (!program || typeof program != "string") {
+      errorMessages.push(`invalid program: ${program}`);
+      errors.invalidProgram = true;
     }
-    // Verify step options: pipe and timeout.
-    const stepOptions = step.options;
-    if (stepOptions?.timeout && typeof stepOptions?.timeout != "number") {
-      warnings.push("invalid timeout");
+    // Verify step args:
+    if (!args || !Array.isArray(args)) {
+      errorMessages.push(`invalid arguments: ${args}`);
+      errors.invalidArguments = true;
     }
-    if (stepOptions?.pipe) {
-      switch (stepOptions.pipe) {
-        case "stream":
-        case "buffer":
-        case undefined:
-          break;
-        default:
-          warnings.push(`invalid pipe option: ${stepOptions?.pipe}`);
+    // Verify step options
+    if (options || options === null) {
+      // reject wrong types and null
+      if (typeof options != "object" || options === null) {
+        errorMessages.push(`invalid options: ${options}`);
+        errors.invalidOptions = true;
+      } else {
+        // for verify options: pipe and timeout,
+        const { timeout, pipe } = options as {
+          timeout?: unknown;
+          pipe?: unknown;
+        };
+        if (timeout === null || (timeout && typeof timeout != "number")) {
+          errorMessages.push(`invalid timeout: ${timeout}`);
+          errors.invalidTimeout = true;
+        }
+        if (pipe || pipe === null) {
+          switch (pipe) {
+            case "stream":
+            case "buffer":
+            case undefined:
+              break;
+            default:
+              errorMessages.push(`invalid pipe option: ${pipe}`);
+              errors.invalidPipeOption = true;
+          }
+        }
       }
     }
     // return validity
-    if (warnings.length > 0) {
-      return { valid: false, warnings };
+    if (errorMessages.length > 0) {
+      return { valid: false, errors, errorMessages };
     } else {
-      return { valid: true };
+      return { valid: true, errors };
     }
   },
 };

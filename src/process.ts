@@ -16,12 +16,12 @@ const process = {
       let resultPromise: ResultPromise | undefined = undefined;
       try {
         // VALIDATE step:
-        const { valid, warnings } = verify.stepValidity(currentStep);
+        const { valid, errorMessages } = verify.stepValidity(currentStep);
         if (!valid) {
           // Warnings array as a string: "warning_1, warning_2, ...":
           return {
             successful: false,
-            errorMessage: `Invalid step: ${currentStep}. Warnings: ${warnings?.toString()}.`,
+            errorMessage: `Invalid step: ${currentStep}. Errors: ${errorMessages?.toString()}.`,
           };
         }
         // RUN step, capture result promise:
