@@ -3,20 +3,6 @@ import { Context, Workflow, Requirement } from "./types.js";
 import verify from "./verify.js";
 import runtime from "./runtime.js";
 
-function handleFailedRequirements(
-  failedRequirements: Requirement[],
-  workflowName: string,
-) {
-  const message = `Error: Failed to run workflow ${workflowName}, requirements not met:`;
-  const list = "";
-  failedRequirements.forEach((failedRequirement) => {
-    list.concat(
-      `- ${failedRequirement.description}. ${failedRequirement.fulfillmentInstructions}`,
-    );
-  });
-  return message + list;
-}
-
 async function executor({
   context,
   workflow,
@@ -44,6 +30,20 @@ async function executor({
   if (verification.allArePassing) {
     runtime({ context, workflow });
   }
+}
+
+function handleFailedRequirements(
+  failedRequirements: Requirement[],
+  workflowName: string,
+) {
+  const message = `Error: Failed to run workflow ${workflowName}, requirements not met:`;
+  const list = "";
+  failedRequirements.forEach((failedRequirement) => {
+    list.concat(
+      `- ${failedRequirement.description}. ${failedRequirement.fulfillmentInstructions}`,
+    );
+  });
+  return message + list;
 }
 
 export default executor;
