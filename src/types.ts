@@ -24,8 +24,10 @@ interface Requirement {
   fulfillmentInstructions: string[];
 }
 
+// The "description" will be used for displaying progress messages.
 type Process = {
   type: "process";
+  description?: string;
   program: string;
   args: string[];
   options?: ProcessOptions;

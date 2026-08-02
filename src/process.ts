@@ -51,13 +51,13 @@ const process = {
         // resolve result promise:
         if (options?.pipe === "buffer" || !options?.pipe) {
           const { result, error } =
-            await process.util.resolveResultPromise(resultPromise);
+            await process.utils.resolveResultPromise(resultPromise);
           if (result) {
             prevStepResult = result;
             prevStepResultPromise = undefined;
-          }
-          // ERROR HANDLING: in case of Step failure caught by execa.
-          if (error) {
+            process.utils.printProgressMessage(currentStep.description);
+          } else if (error) {
+            // ERROR HANDLING: in case of Step failure caught by execa.
             prevStepResult = undefined;
             prevStepResultPromise = undefined;
             return {
@@ -97,7 +97,7 @@ const process = {
 
     return resultPromise;
   },
-  util: {
+  utils: {
     async resolveResultPromise(resultPromise: ResultPromise) {
       const resultOrError = await resultPromise;
       const response: {
@@ -110,6 +110,11 @@ const process = {
         response.result = resultOrError;
       }
       return response;
+    },
+    printProgressMessage(message: string | undefined) {
+      if (message) {
+        console.log(message);
+      }
     },
   },
 };
