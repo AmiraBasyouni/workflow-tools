@@ -36,6 +36,7 @@ type Process = {
 type ProcessOptions = {
   timeout?: number;
   pipe?: "stream" | "buffer";
+  stdout?: boolean;
   prevResult: Result | undefined;
   prevResultPromise: ResultPromise | undefined;
 };

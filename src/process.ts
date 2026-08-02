@@ -56,6 +56,9 @@ const process = {
             prevStepResult = result;
             prevStepResultPromise = undefined;
             process.utils.printProgressMessage(currentStep.description);
+            if (options?.stdout) {
+              console.log(result.stdout);
+            }
           } else if (error) {
             // ERROR HANDLING: in case of Step failure caught by execa.
             prevStepResult = undefined;

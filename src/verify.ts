@@ -39,7 +39,7 @@ const verify = {
     workflow: Workflow;
   }) {
     let allArePassing = true;
-    // Validate all requirements asynchronously:
+    // Validate requirements asynchronously:
     const promises = workflow.requirements.map(async (requirement) => {
       const response = await process.runSteps(requirement.verificationSteps);
       if (response.successful) {

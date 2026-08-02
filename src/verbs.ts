@@ -15,7 +15,14 @@ const verbs: Segment = {
             fulfillmentInstructions: ["sudo apt install git"],
           },
         ],
-        steps: [{ type: "process", program: "git", args: ["branch"], description: "run git branch"}],
+        steps: [
+          {
+            type: "process",
+            program: "git",
+            args: ["branch", "--color=always"],
+            options: { stdout: true },
+          },
+        ],
       },
     },
   },
