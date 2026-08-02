@@ -47,7 +47,8 @@ const process = {
           }
         }
 
-        // Resolve result promise:
+        // If option "pipe" is set to "buffer" or not set to anything,
+        // resolve result promise:
         if (options?.pipe === "buffer" || !options?.pipe) {
           const { result, error } =
             await process.util.resolveResultPromise(resultPromise);
@@ -55,7 +56,7 @@ const process = {
             prevStepResult = result;
             prevStepResultPromise = undefined;
           }
-          // ERROR HANDLING: Step failure caught by execa.
+          // ERROR HANDLING: in case of Step failure caught by execa.
           if (error) {
             prevStepResult = undefined;
             prevStepResultPromise = undefined;
@@ -65,7 +66,7 @@ const process = {
             };
           }
         }
-        // ERROR HANDLING: Step failure not caught by execa.
+        // ERROR HANDLING: in case of Step failure not caught by execa.
       } catch (error) {
         return {
           successful: false,
