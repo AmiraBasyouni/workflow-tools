@@ -37,8 +37,10 @@ type ProcessOptions = {
   timeout?: number;
   pipe?: "stream" | "buffer";
   stdout?: boolean;
-  prevResult: Result | undefined;
-  prevResultPromise: ResultPromise | undefined;
+  cache?: {
+    prevResult: Result | undefined;
+    prevResultPromise: ResultPromise | undefined;
+  };
 };
 
 // We'll expand the Step type: Step = Process | Prompt | Filesystem.

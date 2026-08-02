@@ -7,8 +7,13 @@ import verify from "./verify.js";
 const process = {
   async runSteps(steps: Step[]) {
     // CACHE previous result and previous result promise:
-    let prevStepResult: Result | undefined = undefined;
-    let prevStepResultPromise: ResultPromise | undefined = undefined;
+    const cache: {
+      prevStepResult: Result | undefined;
+      prevStepResultPromise: ResultPromise | undefined;
+    } = {
+      prevStepResult: undefined,
+      prevStepResultPromise: undefined,
+    };
     // ITERATE steps array:
     for (let i = 0; i < steps.length; i++) {
       const currentStep = steps[i];
@@ -29,16 +34,22 @@ const process = {
           case "stream": {
             resultPromise = process.runStep(program, args, {
               ...options,
-              prevResultPromise: prevStepResultPromise,
+              cache: {
+                prevResult: undefined,
+                prevResultPromise: cache.prevStepResultPromise,
+              },
             });
-            prevStepResultPromise = resultPromise;
-            prevStepResult = undefined;
+            cache.prevStepResultPromise = resultPromise;
+            cache.prevStepResult = undefined;
             break;
           }
           case "buffer": {
             resultPromise = process.runStep(program, args, {
               ...options,
-              prevResult: prevStepResult,
+              cache: {
+                prevResult: cache.prevStepResult,
+                prevResultPromise: undefined,
+              },
             });
             break;
           }
@@ -53,16 +64,16 @@ const process = {
           const { result, error } =
             await process.utils.resolveResultPromise(resultPromise);
           if (result) {
-            prevStepResult = result;
-            prevStepResultPromise = undefined;
+            cache.prevStepResult = result;
+            cache.prevStepResultPromise = undefined;
             process.utils.printProgressMessage(currentStep.description);
             if (options?.stdout) {
               console.log(result.stdout);
             }
           } else if (error) {
             // ERROR HANDLING: in case of Step failure caught by execa.
-            prevStepResult = undefined;
-            prevStepResultPromise = undefined;
+            cache.prevStepResult = undefined;
+            cache.prevStepResultPromise = undefined;
             return {
               successful: false,
               errorMessage: `Failed to execute ${currentStep}. Error: ${error.message}`,
@@ -89,9 +100,9 @@ const process = {
       reject: false,
       stdin:
         stepOptions?.pipe === "buffer"
-          ? [[stepOptions.prevResult?.stdout]]
+          ? [[stepOptions.cache?.prevResult?.stdout]]
           : stepOptions?.pipe === "stream"
-            ? [[stepOptions.prevResultPromise]]
+            ? [[stepOptions.cache?.prevResultPromise]]
             : undefined,
     };
 
