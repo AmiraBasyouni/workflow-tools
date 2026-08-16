@@ -42,5 +42,5 @@
     //"skipLibCheck": true
   },
   // Only compile ts files located in the src directory.
-  "include": ["src"]
+  "include": ["src", "tests"]
 }
