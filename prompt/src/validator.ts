@@ -56,10 +56,7 @@ const validator = {
         const rx = new RegExp(flagValues.regex);
         schema = schema.regex(rx, `Must match format: ${flagValues.regex}`);
       } catch {
-        console.error(
-          `\nError: Invalid regular expression provided to --regex: "${flagValues.regex}"\n`,
-        );
-        process.exit(1);
+	throw new Error(`Invalid regular expression provided to --regex: "${flagValues.regex}"`);
       }
     return schema;
   },

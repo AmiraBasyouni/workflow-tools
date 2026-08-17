@@ -22,8 +22,17 @@ const { positionals, values: flagValues } = parseArgs({
 // Extract the prompt message from the first positional argument.
 const message = positionals[0] || "Enter input: ";
 
-// INPUT VALIDATION (SCHEMA)
-const schema = validator.buildSchemaFromFlags(flagValues);
-
-// CORE LOGIC
-session(message, schema);
+try {
+  // INPUT VALIDATION (SCHEMA)
+  const schema = validator.buildSchemaFromFlags(flagValues);
+  // CORE LOGIC
+  await session(message, schema);
+} catch (e) {
+  // Checking "error instanceof Error" satisfies TypeScript's strict unknown error
+  if (e instanceof Error) {
+    console.error(`\nError: ${e.message}\n`);
+  } else {
+    console.error("\nAn unexpected error occurred.\n");
+  }
+  process.exit(1);
+}
