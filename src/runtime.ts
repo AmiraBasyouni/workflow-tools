@@ -1,15 +1,15 @@
-import { Context, Workflow } from "./types.js";
+import { Workflow, Context } from "./types.js";
 
 import process from "./process.js";
 
 async function runtime({
-  context,
   workflow,
+  context,
 }: {
-  context: Context;
   workflow: Workflow;
+  context: Context;
 }) {
-  const response = await process.runSteps(workflow.steps);
+  const response = await process.runSteps(workflow.steps, context);
   if (response.successful) {
     //console.log({ context });
     //console.log({ workflow });

@@ -1,4 +1,4 @@
-import { Context, Workflow } from "./types.js";
+import { Workflow, Context } from "./types.js";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -32,16 +32,16 @@ const verify = {
     return { isValidCWD: true };
   },
   async workflowRequirements({
-    context,
     workflow,
+    context,
   }: {
-    context: Context;
     workflow: Workflow;
+    context: Context;
   }) {
     let allArePassing = true;
     // Validate requirements asynchronously:
     const promises = workflow.requirements.map(async (requirement) => {
-      const response = await process.runSteps(requirement.verificationSteps);
+      const response = await process.runSteps(requirement.verificationSteps, context);
       if (response.successful) {
         return { requirement, passing: true };
       } else {

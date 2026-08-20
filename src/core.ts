@@ -23,7 +23,7 @@ function core(cwd: string, args: string[]) {
   // CORE LOGIC
   const { workflow, params } = resolvedArgs;
   const context = { params, cwd };
-  executor({ context, workflow });
+  executor({ workflow, context });
 }
 
 export default core;

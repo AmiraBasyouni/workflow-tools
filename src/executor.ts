@@ -1,15 +1,15 @@
-import { Context, Workflow, Requirement } from "./types.js";
+import { Workflow, Context, Requirement } from "./types.js";
 
 import verify from "./verify.js";
 import runtime from "./runtime.js";
 import format from "./format.js";
 
 async function executor({
-  context,
   workflow,
+  context,
 }: {
-  context: Context;
   workflow: Workflow;
+  context: Context;
 }) {
   // INPUT VALIDATION
   const verification = await verify.workflowRequirements({ workflow, context });
@@ -31,7 +31,7 @@ async function executor({
 
   // CORE LOGIC
   if (verification.allArePassing) {
-    runtime({ context, workflow });
+    runtime({ workflow, context});
   }
 }
 

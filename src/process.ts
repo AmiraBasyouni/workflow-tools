@@ -1,11 +1,11 @@
-import { Step, StepOptions } from "./types.js";
+import { Step, StepOptions, Context } from "./types.js";
 import { Result, ResultPromise } from "execa";
 
 import { execa } from "execa";
 import verify from "./verify.js";
 
 const process = {
-  async runSteps(steps: Step[]) {
+  async runSteps(steps: Step[], context: Context) {
     // CACHE previous result and previous result promise:
     const cache: {
       prevStepResult: Result | undefined;
