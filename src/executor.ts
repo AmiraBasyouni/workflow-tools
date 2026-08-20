@@ -19,11 +19,13 @@ async function executor({
       verification.failedRequirements,
       workflow.name,
     );
-    throw new Error(errorMessage);
+    console.error("Error: " + errorMessage);
+    process.exit(1);
   } else if (!verification.allArePassing && !verification.failedRequirements) {
-    throw new Error(
-      "Workflow requirements are not passing, but failed requirements can't be detected.",
+    console.error(
+      "Error: Workflow requirements did not pass. Failed requirements could not be detected.",
     );
+    process.exit(1);
   }
 
   // CORE LOGIC

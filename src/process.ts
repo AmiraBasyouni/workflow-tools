@@ -21,12 +21,16 @@ const process = {
       let resultPromise: ResultPromise | undefined = undefined;
       try {
         // VALIDATE step:
-        const { valid, errorMessages } = verify.stepValidity(currentStep);
-        if (!valid) {
+        const stepValidity = verify.stepValidity(currentStep);
+        if (!stepValidity.valid) {
           // Warnings array as a string: "warning_1, warning_2, ...":
           return {
             successful: false,
-            errorMessage: `Invalid step: ${currentStep}. Errors: ${errorMessages?.toString()}.`,
+            errorMessages: [
+              `Invalid step: ${JSON.stringify(currentStep)}.`,
+              `Errors:`,
+              `${stepValidity.errorMessages?.toString()}.`,
+            ],
           };
         }
         // RUN step, capture result promise:
@@ -76,7 +80,11 @@ const process = {
             cache.prevStepResultPromise = undefined;
             return {
               successful: false,
-              errorMessage: `Failed to execute ${currentStep}. Error: ${error.message}`,
+              errorMessages: [
+                `Failed to execute step: ${JSON.stringify(currentStep)}.`,
+                `Execa:`,
+                `${error.message}`,
+              ],
             };
           }
         }

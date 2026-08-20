@@ -9,9 +9,11 @@ function core(cwd: string, args: string[]) {
 
   // ERROR HANDLING
   if (!isValidCWD) {
-    throw new Error(cwdError);
+    console.error("Error: " + cwdError);
+    process.exit(1);
   } else if ("error" in resolvedArgs) {
-    throw new Error(resolvedArgs.error);
+    console.error("Error: " + resolvedArgs.error);
+    process.exit(1);
   }
 
   // CORE LOGIC

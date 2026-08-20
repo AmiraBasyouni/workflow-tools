@@ -11,7 +11,8 @@ function getErrorMessage({
 }) {
   // Capture verb as a string.
   const verbString = verb.join(" ");
-  const errorMessage = `Invalid verb: "${verbString}". ` + message;
+  const errorMessage =
+    `Invalid verb. ` + message + ` Received: "${verbString}".`;
   return errorMessage;
 }
 
@@ -34,7 +35,7 @@ function resolve(
       // It's undefined, throw an error.
       const errorMessage = getErrorMessage({
         verb,
-        message: "The provided verb does not exist.",
+        message: "The verb does not exist.",
       });
       return { error: errorMessage };
     } else if ("workflow" in nextNode && nextNode.workflow) {
@@ -50,7 +51,7 @@ function resolve(
   // Ended on a segment, throw an error.
   const errorMessage = getErrorMessage({
     verb,
-    message: "The provided verb does not map to a workflow.",
+    message: "The verb does not map to a workflow.",
   });
   return { error: errorMessage };
 }

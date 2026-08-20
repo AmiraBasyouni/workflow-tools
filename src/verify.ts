@@ -12,7 +12,7 @@ const verify = {
     }
 
     if (cwd === "") {
-      const error = `Invalid cwd. The provided cwd is an empty string.`;
+      const error = `Invalid cwd. The provided cwd is an empty string: ${cwd}.`;
       return { isValidCWD: false, error };
     }
 
@@ -20,12 +20,12 @@ const verify = {
     const stat = fs.statSync(resolvedPath);
 
     if (!stat.isDirectory()) {
-      const error = `Invalid cwd: ${cwd}. The provided cwd is not a directory.`;
+      const error = `Invalid cwd. The provided cwd is not a directory: ${cwd}.`;
       return { isValidCWD: false, error };
     }
 
     if (!fs.existsSync(resolvedPath)) {
-      const error = `Invalid cwd: ${cwd}. The provided cwd does not exist.`;
+      const error = `Invalid cwd. The provided cwd does not exist: ${cwd}.`;
       return { isValidCWD: false, error };
     }
 

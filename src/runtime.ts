@@ -15,7 +15,8 @@ async function runtime({
     //console.log({ workflow });
     return;
   } else {
-    console.error("runtime: failed to run workflow.");
+    console.error("Error: Failed to run workflow steps.");
+    console.error(response.errorMessages);
     return;
   }
 }
