@@ -2,6 +2,7 @@ import { Context, Workflow, Requirement } from "./types.js";
 
 import verify from "./verify.js";
 import runtime from "./runtime.js";
+import format from "./format.js";
 
 async function executor({
   context,
@@ -19,11 +20,11 @@ async function executor({
       verification.failedRequirements,
       workflow.name,
     );
-    console.error("Error: " + errorMessage);
+    console.error("\nError: " + errorMessage);
     process.exit(1);
   } else if (!verification.allArePassing && !verification.failedRequirements) {
     console.error(
-      "Error: Workflow requirements did not pass. Failed requirements could not be detected.",
+      "\nError: Workflow requirements did not pass. Failed requirements could not be detected.",
     );
     process.exit(1);
   }
@@ -38,13 +39,11 @@ function handleFailedRequirements(
   failedRequirements: Requirement[],
   workflowName: string,
 ) {
-  const message = `Error: Failed to run workflow ${workflowName}, requirements not met:`;
-  const list = "";
-  failedRequirements.forEach((failedRequirement) => {
-    list.concat(
-      `- ${failedRequirement.description}. ${failedRequirement.fulfillmentInstructions}`,
-    );
-  });
+  const message = `\nError: Failed to run workflow ${workflowName}, requirements not met:\n`;
+  const bullets = failedRequirements.map(
+    (req) => `${req.description}. ${req.fulfillmentInstructions}.`,
+  );
+  const list = format.bulletList(bullets);
   return message + list;
 }
 

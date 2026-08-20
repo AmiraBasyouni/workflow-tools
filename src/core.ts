@@ -1,5 +1,6 @@
 import verify from "./verify.js";
 import resolve from "./resolve.js";
+import format from "./format.js";
 import executor from "./executor.js";
 
 function core(cwd: string, args: string[]) {
@@ -9,10 +10,13 @@ function core(cwd: string, args: string[]) {
 
   // ERROR HANDLING
   if (!isValidCWD) {
-    console.error("Error: " + cwdError);
+    console.error("\nError: " + cwdError);
     process.exit(1);
   } else if ("error" in resolvedArgs) {
-    console.error("Error: " + resolvedArgs.error);
+    console.error("\nError: " + resolvedArgs.error + "\n");
+    console.error(
+      "Available Verbs: \n" + format.bulletList(resolvedArgs.alternativeVerbs),
+    );
     process.exit(1);
   }
 

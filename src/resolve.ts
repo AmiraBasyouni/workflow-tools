@@ -16,9 +16,15 @@ function getErrorMessage({
   return errorMessage;
 }
 
+function getAlternativeVerbs() {
+  return ["branch list", "branch create"];
+}
+
 function resolve(
   verb: string[],
-): { workflow: Workflow; params: string[] } | { error: string } {
+):
+  | { workflow: Workflow; params: string[] }
+  | { error: string; alternativeVerbs: string[] } {
   let currentNode: Segment = verbs;
   // Traverse segments until workflow is found.
   for (let i = 0; i < verb.length; i++) {
@@ -28,7 +34,7 @@ function resolve(
         verb,
         message: 'The key "workflow" is reserved.',
       });
-      return { error: errorMessage };
+      return { error: errorMessage, alternativeVerbs: getAlternativeVerbs() };
     }
     const nextNode = currentNode[segment] as Segment | undefined;
     if (typeof nextNode === "undefined") {
@@ -37,7 +43,7 @@ function resolve(
         verb,
         message: "The verb does not exist.",
       });
-      return { error: errorMessage };
+      return { error: errorMessage, alternativeVerbs: getAlternativeVerbs() };
     } else if ("workflow" in nextNode && nextNode.workflow) {
       // It's a workflow, return workflow and params.
       const workflow = nextNode.workflow;
@@ -53,7 +59,7 @@ function resolve(
     verb,
     message: "The verb does not map to a workflow.",
   });
-  return { error: errorMessage };
+  return { error: errorMessage, alternativeVerbs: getAlternativeVerbs() };
 }
 
 export default resolve;
