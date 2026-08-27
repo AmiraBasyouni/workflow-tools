@@ -1,4 +1,4 @@
-import { Result, ResultPromise } from "execa";
+import { Result, ResultPromise, Options } from "execa";
 
 type Segment = {
   workflow?: Workflow;
@@ -33,7 +33,18 @@ type Process = {
   options?: ProcessOptions;
 };
 
-type ProcessOptions = {
+// execa options + my own internal cache
+type ProcessOptions = Options & {
+  prevStep?: Cache;
+  stdinPipe?: PipeOptions;
+  stdoutPipe?: PipeOptions;
+};
+type Cache = {
+  result: Result | undefined;
+  resultPromise: ResultPromise | undefined;
+};
+type PipeOptions = "stream" | "buffer";
+/*type ProcessOptions = {
   timeout?: number;
   pipe?: "stream" | "buffer";
   stdout?: boolean;
@@ -41,7 +52,7 @@ type ProcessOptions = {
     prevResult: Result | undefined;
     prevResultPromise: ResultPromise | undefined;
   };
-};
+};*/
 
 // We'll expand the Step type: Step = Process | Prompt | Filesystem.
 type Step = Process;

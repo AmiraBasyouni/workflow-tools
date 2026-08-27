@@ -7,23 +7,24 @@ import verify from "./verify.js";
 const process = {
   async runSteps(steps: Step[], context: Context) {
     // CACHE previous result and previous result promise:
-    const cache: {
-      prevStepResult: Result | undefined;
-      prevStepResultPromise: ResultPromise | undefined;
+    const prevStep: {
+      result: Result | undefined;
+      resultPromise: ResultPromise | undefined;
     } = {
-      prevStepResult: undefined,
-      prevStepResultPromise: undefined,
+      result: undefined,
+      resultPromise: undefined,
     };
-    // ITERATE steps array:
+    // ITERATE steps:
     for (let i = 0; i < steps.length; i++) {
       const currentStep = steps[i];
       const { program, args, options } = currentStep;
       let resultPromise: ResultPromise | undefined = undefined;
+
       try {
         // VALIDATE step:
         const stepValidity = verify.stepValidity(currentStep);
         if (!stepValidity.valid) {
-          // Warnings array as a string: "warning_1, warning_2, ...":
+          // error-Messages: warnings array as a string: "warning_1, warning_2, ...":
           return {
             successful: false,
             errorMessages: [
@@ -33,51 +34,25 @@ const process = {
             ],
           };
         }
-        // RUN step, capture result promise:
-        switch (options?.pipe) {
-          case "stream": {
-            resultPromise = process.runStep(program, args, {
-              ...options,
-              cache: {
-                prevResult: undefined,
-                prevResultPromise: cache.prevStepResultPromise,
-              },
-            });
-            cache.prevStepResultPromise = resultPromise;
-            cache.prevStepResult = undefined;
-            break;
-          }
-          case "buffer": {
-            resultPromise = process.runStep(program, args, {
-              ...options,
-              cache: {
-                prevResult: cache.prevStepResult,
-                prevResultPromise: undefined,
-              },
-            });
-            break;
-          }
-          case undefined: {
-            resultPromise = process.runStep(program, args, options);
-          }
-        }
 
-        // If option "pipe" is set to "buffer" or not set to anything,
-        // resolve result promise:
-        if (options?.pipe === "buffer" || !options?.pipe) {
-          const { result, error } =
-            await process.utils.resolveResultPromise(resultPromise);
+        // RESOLVE PREV-STEP-PROMISE
+        const stdin = options?.stdin;
+        const stdinIsStreaming =
+          stdin === "pipe" && options?.stdinPipe === "stream";
+        if (prevStep.resultPromise && !stdinIsStreaming) {
+          const { result, error } = await process.utils.resolveResultPromise(
+            prevStep.resultPromise,
+          );
+          // & CACHE PREV-STEP
+          // if no execa-errors, cache result:
           if (result) {
-            cache.prevStepResult = result;
-            cache.prevStepResultPromise = undefined;
-            process.utils.printProgressMessage(currentStep.description);
-            if (options?.stdout) {
-              console.log(result.stdout);
-            }
+            prevStep.result = result;
+            prevStep.resultPromise = undefined;
+            // if execa-errors:
           } else if (error) {
             // ERROR HANDLING: in case of Step failure caught by execa.
-            cache.prevStepResult = undefined;
-            cache.prevStepResultPromise = undefined;
+            prevStep.result = undefined;
+            prevStep.resultPromise = undefined;
             return {
               successful: false,
               errorMessages: [
@@ -88,11 +63,82 @@ const process = {
             };
           }
         }
+
+        // RUN STEP
+        if (options?.stdin === "pipe") {
+          // OPTIONS: if stdin = pipe, supply prev-step.
+          switch (options?.stdinPipe) {
+            // If pipe-stdin = stream, pass prev-step-result-promise to stdin
+            case "stream": {
+              resultPromise = process.runStep(program, args, {
+                ...options,
+                prevStep: {
+                  result: undefined,
+                  resultPromise: prevStep.resultPromise,
+                },
+              });
+              prevStep.resultPromise = resultPromise;
+              prevStep.result = undefined;
+              break;
+            }
+            // If pipe-stdin is undefined, default to buffer.
+            // If pipe-stdin = buffer, pass prev-step-result to stdin
+            case undefined:
+            case "buffer": {
+              resultPromise = process.runStep(program, args, {
+                ...options,
+                prevStep: {
+                  result: prevStep.result,
+                  resultPromise: undefined,
+                },
+              });
+              break;
+            }
+          }
+        } else {
+          // OPTIONS: if stdin != pipe, disregard prev-step.
+          resultPromise = process.runStep(program, args, options);
+        }
+
+        // RESOLVE RESULT-PROMISE
+        const stdout = options?.stdout;
+        const stdoutIsStreaming =
+          stdout === "pipe" && options?.stdoutPipe === "stream";
+        if (!stdoutIsStreaming) {
+          // RESOLVE PROMISE
+          const { result, error } =
+            await process.utils.resolveResultPromise(resultPromise);
+          // & CACHE PREV-STEP
+          // if no execa-errors, cache result:
+          if (result) {
+            prevStep.result = result;
+            prevStep.resultPromise = undefined;
+            process.utils.printProgressMessage(currentStep.description);
+            // if execa-errors:
+          } else if (error) {
+            // ERROR HANDLING: in case of Step failure caught by execa.
+            prevStep.result = undefined;
+            prevStep.resultPromise = undefined;
+            return {
+              successful: false,
+              errorMessages: [
+                `Failed to execute step: ${JSON.stringify(currentStep)}.`,
+                `Execa:`,
+                `${error.message}`,
+              ],
+            };
+          }
+        } else if (stdoutIsStreaming && i === steps.length - 1) {
+          throw new Error(
+            "Cannot stream stdout from the final step because there is no next step.",
+          );
+        }
+
         // ERROR HANDLING: in case of Step failure not caught by execa.
       } catch (error) {
         return {
           successful: false,
-          errorMessage: `Failed to execute ${currentStep}. Error: ${error}`,
+          errorMessages: `Failed to execute ${currentStep}. Error: ${error}`,
         };
       }
     }
@@ -100,18 +146,36 @@ const process = {
     return { successful: true };
   },
   runStep(program: string, args: string[], stepOptions?: StepOptions) {
-    // SET execa options:
+    // If stdin = pipe but prev-step was not cached (i.e. stdout != pipe), throw error.
+    if (stepOptions?.stdinPipe === "buffer" && !stepOptions.prevStep?.result) {
+      throw new Error(
+        "piping error! Received 'stdin: pipe', check that the previous step has 'stdout: pipe'.",
+      );
+    } else if (
+      stepOptions?.stdinPipe === "stream" &&
+      !stepOptions.prevStep?.resultPromise
+    ) {
+      throw new Error(
+        "piping error! Received 'stdin: pipe', check that the previous step has 'stdout: pipe'.",
+      );
+    }
+
+    // SET EXECA OPTIONS:
     // "timeout" is in milliseconds.
     // A false "reject" will return errors instead of throwing exceptions.
+    // execa stdin/out/err all default to 'pipe', which does not benefit my users.
+    // Instead, users can rely on pipe: buffer | stream
+    // stdin: 'inherit', stdout: 'inherit', stderr: 'inherit', direct everything to the terminal.
     const execaOptions = {
-      timeout: stepOptions?.timeout,
-      reject: false,
+      ...stepOptions,
+      pipe: undefined,
+      prevStep: undefined,
       stdin:
-        stepOptions?.pipe === "buffer"
-          ? [[stepOptions.cache?.prevResult?.stdout]]
-          : stepOptions?.pipe === "stream"
-            ? [[stepOptions.cache?.prevResultPromise]]
-            : undefined,
+        stepOptions?.stdinPipe === "buffer"
+          ? [[stepOptions.prevStep?.result?.stdout]]
+          : stepOptions?.stdinPipe === "stream"
+            ? [[stepOptions.prevStep?.resultPromise]]
+            : stepOptions?.stdin,
     };
 
     // EXECUTE step:
@@ -138,6 +202,7 @@ const process = {
         console.log(message);
       }
     },
+    handleExecaError() {},
   },
 };
 
