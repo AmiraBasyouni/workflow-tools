@@ -10,9 +10,11 @@ const process = {
     const prevStep: {
       result: Result | undefined;
       resultPromise: ResultPromise | undefined;
+      options: StepOptions | undefined;
     } = {
       result: undefined,
       resultPromise: undefined,
+      options: undefined,
     };
     // ITERATE steps:
     for (let i = 0; i < steps.length; i++) {
@@ -31,6 +33,39 @@ const process = {
               `Invalid step: ${JSON.stringify(currentStep)}.`,
               `Errors:`,
               `${stepValidity.errorMessages?.toString()}.`,
+            ],
+          };
+        }
+        // If current step says stdin = pipe but prev-step says stdout != pipe, halt with error.
+        if (options?.stdin === "pipe" && prevStep?.options?.stdout !== "pipe") {
+          return {
+            successful: false,
+            errorMessages: [
+              `Failed to run step: ${JSON.stringify(currentStep)}.`,
+              "Pipe error:",
+              `  Previous step stdout: ${JSON.stringify(prevStep.options?.stdin)}.`,
+              `  Current step stdin: ${JSON.stringify(currentStep.options?.stdin)}.\n`,
+	      `  Expected: 'Previous step stdout: "pipe".'`,
+            ],
+          };
+        } else if (
+          options?.stdin === "pipe" &&
+          options?.stdinPipe === "stream" &&
+          !prevStep?.resultPromise
+        ) {
+          return {
+            successful: false,
+            errorMessages: [
+              `Failed to run step: ${JSON.stringify(currentStep)}.`,
+              "Pipe error: current step expects stdin: 'pipe' through stdinPipe: 'stream', " +
+                "but previous step failed to stream.\nCheck that stdout: 'pipe' and stdoutPipe: 'stream'.",
+              `  Previous step:`,
+              `    stdout: ${JSON.stringify(prevStep.options?.stdout)}.`,
+              `    stdoutPipe: ${JSON.stringify(prevStep.options?.stdoutPipe)}.`,
+              `  Current step:`,
+              `    stdin: ${JSON.stringify(currentStep.options?.stdin)}.`,
+              `    stdinPipe: ${JSON.stringify(prevStep.options?.stdinPipe)}.\n`,
+              `  Expected: 'Previous step stdoutPipe: "stream"'`,
             ],
           };
         }
@@ -99,6 +134,7 @@ const process = {
           // OPTIONS: if stdin != pipe, disregard prev-step.
           resultPromise = process.runStep(program, args, options);
         }
+        prevStep.options = options;
 
         // RESOLVE RESULT-PROMISE
         const stdout = options?.stdout;
@@ -138,7 +174,7 @@ const process = {
       } catch (error) {
         return {
           successful: false,
-          errorMessages: `Failed to execute ${currentStep}. Error: ${error}`,
+          errorMessages: [`Failed to execute ${currentStep}. Error: ${error}`],
         };
       }
     }
@@ -146,20 +182,6 @@ const process = {
     return { successful: true };
   },
   runStep(program: string, args: string[], stepOptions?: StepOptions) {
-    // If stdin = pipe but prev-step was not cached (i.e. stdout != pipe), throw error.
-    if (stepOptions?.stdinPipe === "buffer" && !stepOptions.prevStep?.result) {
-      throw new Error(
-        "piping error! Received 'stdin: pipe', check that the previous step has 'stdout: pipe'.",
-      );
-    } else if (
-      stepOptions?.stdinPipe === "stream" &&
-      !stepOptions.prevStep?.resultPromise
-    ) {
-      throw new Error(
-        "piping error! Received 'stdin: pipe', check that the previous step has 'stdout: pipe'.",
-      );
-    }
-
     // SET EXECA OPTIONS:
     // "timeout" is in milliseconds.
     // A false "reject" will return errors instead of throwing exceptions.

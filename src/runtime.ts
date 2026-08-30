@@ -9,15 +9,20 @@ async function runtime({
   workflow: Workflow;
   context: Context;
 }) {
-  const response = await process.runSteps(workflow.steps, context);
-  if (response.successful) {
-    //console.log({ context });
-    //console.log({ workflow });
-    return;
-  } else {
-    console.error("\nError: Failed to run workflow steps.");
-    console.error(response.errorMessages);
-    return;
+  try {
+    const response = await process.runSteps(workflow.steps, context);
+    if (response.successful) {
+      return;
+    } else {
+      console.error("\nError: Failed to run workflow.\n");
+      response.errorMessages?.forEach(message => console.error("  " + message))
+      console.error("");
+      return;
+    }
+  } catch (e) {
+    console.error("\nError: Failed to run workflow.\n");
+    console.error("Unexpected error:");
+    console.error(e + "\n");
   }
 }
 
