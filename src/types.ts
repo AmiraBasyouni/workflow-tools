@@ -36,23 +36,11 @@ type Process = {
 // execa options + my own internal cache
 type ProcessOptions = Options & {
   prevStep?: Cache;
-  stdinPipe?: PipeOptions;
-  stdoutPipe?: PipeOptions;
 };
 type Cache = {
   result: Result | undefined;
   resultPromise: ResultPromise | undefined;
 };
-type PipeOptions = "stream" | "buffer";
-/*type ProcessOptions = {
-  timeout?: number;
-  pipe?: "stream" | "buffer";
-  stdout?: boolean;
-  cache?: {
-    prevResult: Result | undefined;
-    prevResultPromise: ResultPromise | undefined;
-  };
-};*/
 
 // We'll expand the Step type: Step = Process | Prompt | Filesystem.
 type Step = Process;

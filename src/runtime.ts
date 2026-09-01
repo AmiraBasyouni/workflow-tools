@@ -1,6 +1,6 @@
 import { Workflow, Context } from "./types.js";
 
-import process from "./process.js";
+import execaProcess from "./process.js";
 
 async function runtime({
   workflow,
@@ -10,13 +10,16 @@ async function runtime({
   context: Context;
 }) {
   try {
-    const response = await process.runSteps(workflow.steps, context);
+    const response = await execaProcess.runSteps(workflow.steps, context);
     if (response.successful) {
       return;
     } else {
       console.error("\nError: Failed to run workflow.\n");
-      response.errorMessages?.forEach(message => console.error("  " + message))
+      response.errorMessages?.forEach((message) =>
+        console.error("  " + message),
+      );
       console.error("");
+      process.exit(1);
       return;
     }
   } catch (e) {
