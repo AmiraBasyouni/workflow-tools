@@ -107,8 +107,7 @@ const process = {
               successful: false,
               errorMessages: [
                 `Failed to execute step: ${JSON.stringify(currentStep)}.`,
-                `Execa:`,
-                `${error.message}`,
+                `Execa Error: ${error.message}`,
               ],
             };
           }
@@ -132,7 +131,7 @@ const process = {
       } catch (error) {
         return {
           successful: false,
-          errorMessages: [`Failed to execute ${currentStep}. Error: ${error}`],
+          errorMessages: [`Failed to execute step: ${JSON.stringify(currentStep)}.`, `${error}`],
         };
       }
     }
@@ -148,6 +147,7 @@ const process = {
     // stdin: 'inherit', stdout: 'inherit', stderr: 'inherit', direct everything to the terminal.
     const execaOptions = {
       ...stepOptions,
+      "reject": false,
     };
 
     // EXECUTE step:

@@ -14,7 +14,7 @@ async function runtime({
     if (response.successful) {
       return;
     } else {
-      console.error("\nError: Failed to run workflow.\n");
+      console.error("\nError: workflow aborted.\n");
       response.errorMessages?.forEach((message) =>
         console.error("  " + message),
       );
@@ -23,7 +23,7 @@ async function runtime({
       return;
     }
   } catch (e) {
-    console.error("\nError: Failed to run workflow.\n");
+    console.error("\nError: workflow aborted.\n");
     console.error("Unexpected error:");
     console.error(e + "\n");
   }
