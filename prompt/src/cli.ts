@@ -4,6 +4,7 @@ import process from "process";
 import { parseArgs } from "node:util";
 import validator from "./validator.js";
 import session from "./session.js";
+import output from "./output.js";
 
 // Parse terminal arguments & flags.
 // positionals: Array of unflagged arguments.
@@ -15,6 +16,7 @@ const { positionals, values: flagValues } = parseArgs({
     min: { type: "string" },
     max: { type: "string" },
     regex: { type: "string" },
+    null: { type: "boolean", default: false },
   },
   allowPositionals: true,
 });
@@ -23,10 +25,12 @@ const { positionals, values: flagValues } = parseArgs({
 const message = positionals[0] || "Enter input: ";
 
 try {
-  // INPUT VALIDATION (SCHEMA)
+  // CREATE SCHEMA FOR INPUT VALIDATION
   const schema = validator.buildSchemaFromFlags(flagValues);
-  // CORE LOGIC
-  await session(message, schema);
+  // RUN PROMPTING SESSION
+  const userResponse = await session(message, schema);
+  // STDOUT RESPONSE
+  output(userResponse, flagValues.null);
 } catch (e) {
   // Checking "error instanceof Error" satisfies TypeScript's strict unknown error
   if (e instanceof Error) {

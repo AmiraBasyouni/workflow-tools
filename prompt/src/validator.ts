@@ -6,16 +6,18 @@ type FlagValues = {
   min?: string | undefined;
   max?: string | undefined;
   regex?: string | undefined;
+  null?: boolean;
 };
 
-export type ValidationSchema = z.ZodTypeAny;
+export type ValidationSchema = z.ZodType<string | number>;
 
 export type ValidationResult =
-  { success: true; data: unknown } | { success: false; errors: string[] };
+  | { success: true; data: string | number }
+  | { success: false; errors: string[] };
 
 const validator = {
   // Build Zod Schema from parsed flags
-  buildSchemaFromFlags(flagValues: FlagValues) {
+  buildSchemaFromFlags(flagValues: FlagValues): z.ZodType<string | number> {
     if (flagValues.type === "number") {
       // Build number schema for flag rules (min/max)
       let flagSchema = z.number();
@@ -56,7 +58,9 @@ const validator = {
         const rx = new RegExp(flagValues.regex);
         schema = schema.regex(rx, `Must match format: ${flagValues.regex}`);
       } catch {
-	throw new Error(`Invalid regular expression provided to --regex: "${flagValues.regex}"`);
+        throw new Error(
+          `Invalid regular expression provided to --regex: "${flagValues.regex}"`,
+        );
       }
     return schema;
   },

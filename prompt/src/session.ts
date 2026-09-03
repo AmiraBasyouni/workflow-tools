@@ -1,7 +1,11 @@
 import interaction from "./interaction.js";
 import validator, { ValidationSchema } from "./validator.js";
+import { UserResponse } from "./output.js";
 
-async function session(prompt: string, schema: ValidationSchema) {
+async function session(
+  prompt: string,
+  schema: ValidationSchema,
+): Promise<UserResponse> {
   // START INTERACTION
   const { rl, ask } = interaction.start();
 
@@ -15,20 +19,18 @@ async function session(prompt: string, schema: ValidationSchema) {
 
     // ESCAPE HATCH: Allow explicit keywords to quit gracefully.
     if (["exit", "quit", "cancel"].includes(answer.toLowerCase())) {
-      console.log("\nOperation cancelled.");
+      console.error("\nOperation cancelled.");
       // END INTERACTION (escape hatch)
       interaction.end(rl);
-      process.exit(130);
+      return { successful: false, exitCode: 130, data: null };
     }
 
     // INPUT VALIDATION
     const result = validator.validate(answer, schema);
     if (result.success) {
-      // Print the valid output to stdout so shell scripts can capture it.
-      console.log(result.data);
       // END INTERACTION (valid input)
       interaction.end(rl);
-      process.exit(0);
+      return { successful: true, exitCode: 0, data: result.data };
     }
     if (!result.success) {
       // Print validation errors then loop.
