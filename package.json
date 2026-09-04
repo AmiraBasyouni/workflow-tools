@@ -1,35 +1,17 @@
 {
-  "name": "verbs-cli",
-  "version": "0.0.1",
-  "description": "Verbs is a configurable CLI that turns workflows into readable commands.",
-  "keywords": [
-    "git",
-    "github",
-    "workflow",
-    "cli",
-    "configurable"
+  "name": "verbs-workspace",
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
-  "homepage": "https://github.com/AmiraBasyouni/verbs-cli#readme",
-  "bugs": {
-    "url": "https://github.com/AmiraBasyouni/verbs-cli/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/AmiraBasyouni/verbs-cli.git"
-  },
-  "license": "MIT",
-  "author": "Amira Basyouni",
-  "type": "module",
-  "main": "src/cli.ts",
-  "bin": {
-    "verb": "./dist/cli.js"
-  },
-  "export": {
-    ".": "./src/core.ts"
-  },
   "scripts": {
-    "build": "tsc",
-    "test": "vitest"
+    "build": "npm run build --workspaces",
+    "build-verbs": "npm run build --workspace=verbs-cli",
+    "build-prompt": "npm run build --workspace=@amirab/prompt",
+    "test": "npm run test --workspaces",
+    "test-prompt": "npm run test --workspace=@amirab/prompt",
+    "test-verbs": "npm run test --workspace=verbs-cli",
+    "verbs": "node packages/verbs-cli/dist/cli.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -40,11 +22,6 @@
     "prettier": "3.9.4",
     "tsx": "^4.23.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.62.1",
-    "vitest": "^4.1.10"
-  },
-  "dependencies": {
-    "execa": "^9.6.1",
-    "zod": "^4.4.3"
+    "typescript-eslint": "^8.62.1"
   }
 }

@@ -1,0 +1,39 @@
+{
+  "name": "verbs-cli",
+  "version": "0.0.1",
+  "description": "Verbs is a configurable CLI that turns workflows into readable commands.",
+  "keywords": [
+    "git",
+    "github",
+    "workflow",
+    "cli",
+    "configurable"
+  ],
+  "homepage": "https://github.com/AmiraBasyouni/verbs-cli#readme",
+  "bugs": {
+    "url": "https://github.com/AmiraBasyouni/verbs-cli/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmiraBasyouni/verbs-cli.git",
+    "directory": "packages/verbs-cli"
+  },
+  "license": "MIT",
+  "author": "Amira Basyouni",
+  "type": "module",
+  "main": "src/cli.ts",
+  "bin": {
+    "verb": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/core.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test ./dist/tests/*.test.js",
+    "start": "tsx ./src/cli.ts"
+  },
+  "dependencies": {
+    "execa": "^10.0.1"
+  }
+}
