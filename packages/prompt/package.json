@@ -25,7 +25,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test ./dist/tests/*.test.js",
+    "test": "tsx --test ./tests/*.test.ts",
     "start": "tsx ./src/cli.ts"
   },
   "dependencies": {
