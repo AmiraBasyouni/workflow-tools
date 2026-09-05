@@ -31,7 +31,7 @@ async function executor({
 
   // CORE LOGIC
   if (verification.allArePassing) {
-    runtime({ workflow, context});
+    runtime({ workflow, context });
   }
 }
 
@@ -39,11 +39,12 @@ function handleFailedRequirements(
   failedRequirements: Requirement[],
   workflowName: string,
 ) {
-  const message = `\nError: Failed to run workflow ${workflowName}, requirements not met:\n`;
+  const message = `Failed to run workflow: "${workflowName}".\n\nRequirements not met:\n`;
   const bullets = failedRequirements.map(
-    (req) => `${req.description}. ${req.fulfillmentInstructions}.`,
+    (req) =>
+      `Expected: ${req.description}\nFix: ${req.fulfillmentInstructions}`,
   );
-  const list = format.bulletList(bullets);
+  const list = format.numberedList(bullets, 2);
   return message + list;
 }
 
