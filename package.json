@@ -6,12 +6,13 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
-    "build-verbs": "npm run build --workspace=verbs-cli",
+    "build-verb": "npm run build --workspace=verbs-cli",
     "build-prompt": "npm run build --workspace=@amirab/prompt",
     "test": "npm run test --workspaces",
     "test-prompt": "npm run test --workspace=@amirab/prompt",
-    "test-verbs": "npm run test --workspace=verbs-cli",
-    "verbs": "node packages/verbs-cli/dist/cli.js"
+    "test-verb": "npm run test --workspace=verbs-cli",
+    "verb": "node packages/verbs-cli/dist/cli.js",
+    "prompt": "node packages/prompt/dist/cli.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
