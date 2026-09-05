@@ -5,6 +5,8 @@
     "packages/*"
   ],
   "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "build": "npm run build --workspaces",
     "build-verb": "npm run build --workspace=verbs-cli",
     "build-prompt": "npm run build --workspace=@amirab/prompt",

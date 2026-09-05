@@ -1,15 +1,15 @@
-{   
+{
   "name": "@amirab/prompt",
   "version": "0.0.1",
   "description": "Prompt is a simple prompting CLI.",
   "keywords": [
-    "prompt", 
+    "prompt",
     "inquire",
-    "ask", 
+    "ask",
     "cli"
   ],
   "homepage": "https://github.com/AmiraBasyouni/verbs-cli#readme",
-  "bugs": { 
+  "bugs": {
     "url": "https://github.com/AmiraBasyouni/verbs-cli/issues"
   },
   "repository": {

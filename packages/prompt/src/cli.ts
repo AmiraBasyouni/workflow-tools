@@ -26,7 +26,7 @@ const { positionals, values: flagValues } = parseArgs({
 });
 
 const args = process.argv.slice(2);
-const hasOnlyOneArg = args.length === 1
+const hasOnlyOneArg = args.length === 1;
 
 if (flagValues.help) {
   if (!hasOnlyOneArg) {
