@@ -13,8 +13,8 @@
     "test": "npm run test --workspaces",
     "test-prompt": "npm run test --workspace=@amirab/prompt",
     "test-verb": "npm run test --workspace=verbs-cli",
-    "verb": "node packages/verbs-cli/dist/cli.js",
-    "prompt": "node packages/prompt/dist/cli.js"
+    "verb": "npm run build-verb && node packages/verbs-cli/dist/cli.js",
+    "prompt": "npm run build-prompt && node packages/prompt/dist/cli.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
