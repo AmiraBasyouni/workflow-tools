@@ -124,7 +124,6 @@ const process = {
         } else {
           prevStep.result = currStep.result;
           prevStep.resultPromise = undefined;
-          break;
         }
 
         // ERROR HANDLING: in case of Step failure not caught by execa.
