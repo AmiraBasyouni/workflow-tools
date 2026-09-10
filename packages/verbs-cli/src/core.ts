@@ -15,7 +15,7 @@ function core(cwd: string, args: string[]) {
   } else if ("error" in resolvedArgs) {
     console.error("\nError: " + resolvedArgs.error + "\n");
     console.error(
-      "Available Verbs: \n" + format.bulletList(resolvedArgs.alternativeVerbs),
+      "Available Verbs: \n" + format.bulletList(resolvedArgs.alternativeVerbs, 2),
     );
     process.exit(1);
   }
