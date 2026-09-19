@@ -8,6 +8,7 @@ function output(userResponse: UserResponse, isNullTerminated: boolean) {
   if (!userResponse.successful) {
     // The user can cancel the session.
     console.error(`Exit code: ${userResponse.exitCode}.`);
+    process.exit(userResponse.exitCode);
   } else if (userResponse.successful) {
     // Print the valid output to stdout so shell scripts can capture it.
     process.stdout.write(
