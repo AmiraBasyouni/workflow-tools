@@ -1,7 +1,7 @@
 import { Step, StepOptions, Context } from "./types.js";
 import { Result, ResultPromise } from "execa";
 
-import { execa } from "execa";
+import { execa, Options } from "execa";
 import verify from "./verify.js";
 
 const process = {
@@ -82,8 +82,14 @@ const process = {
           });
           // STREAM
           prevStep.resultPromise.pipe(currStep.resultPromise);
+        } else if (options?.stdin === "buffer" && prevStep.result?.stdout) {
+          // options: if stdin = buffer, use prev-step.
+          process.runStep(program, args, {
+            ...options,
+            stdin: [[prevStep.result.stdout]],
+          });
         } else {
-          // options: if stdin != pipe, disregard prev-step.
+          // options: if stdin != pipe/buffer, disregard prev-step.
           currStep.resultPromise = process.runStep(program, args, options);
         }
         // CACHE options:
@@ -147,14 +153,23 @@ const process = {
     return { successful: true };
   },
   runStep(program: string, args: string[], stepOptions?: StepOptions) {
+    const {
+      stdin,
+      stdout,
+      stderr,
+    } = stepOptions ?? {};
+
     // SET EXECA OPTIONS:
     // "timeout" is in milliseconds.
     // A false "reject" will return errors instead of throwing exceptions.
     // execa stdin/out/err all default to 'pipe', which does not benefit my users.
     // Instead, users can rely on pipe: buffer | stream
     // stdin: 'inherit', stdout: 'inherit', stderr: 'inherit', direct everything to the terminal.
-    const execaOptions = {
+    const execaOptions: Options = {
       ...stepOptions,
+      stdin: stdin === "buffer" ? undefined : stdin,
+      stdout: stdout === "buffer" ? undefined : stdout,
+      stderr: stderr === "buffer" ? undefined : stderr,
       reject: false,
     };
 
