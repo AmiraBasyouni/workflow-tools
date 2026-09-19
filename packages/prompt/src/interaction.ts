@@ -14,7 +14,7 @@ const interaction = {
     // RESOLVE CTRL + C GRACEFULLY
     rl.on("SIGINT", () => {
       // Print newline so the ^C terminal text gets a clean break
-      console.log("\n\nOperation cancelled.");
+      console.error("\n\nOperation cancelled.");
       rl.close();
       process.exit(130);
     });
