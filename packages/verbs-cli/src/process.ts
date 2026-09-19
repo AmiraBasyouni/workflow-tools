@@ -6,7 +6,7 @@ import verify from "./verify.js";
 
 const process = {
   async runSteps(steps: Step[], context: Context) {
-    // CACHE previous step and current step:
+    // CACHE previous step:
     const prevStep: {
       result: Result | undefined;
       resultPromise: ResultPromise | undefined;
@@ -17,6 +17,7 @@ const process = {
       options: undefined,
     };
 
+    // CACHE current step:
     const currStep: {
       result: Result | undefined;
       resultPromise: ResultPromise | undefined;
@@ -28,19 +29,21 @@ const process = {
       const { program, args, options } = currentStep;
 
       try {
-        // VALIDATE step:
+        // VALIDATE current step:
         const stepValidity = verify.stepValidity(currentStep);
         if (!stepValidity.valid) {
-          // error-Messages: warnings array as a string: "warning_1, warning_2, ...":
           return {
             successful: false,
             errorMessages: [
               `Invalid step: ${JSON.stringify(currentStep)}.`,
               `Errors:`,
+              // error-Messages: warnings array as a string: "warning_1, warning_2, ...":
               `${stepValidity.errorMessages?.toString()}.`,
             ],
           };
         }
+
+        // VALIDATE options (stdin/stdout):
         // If current step stdin = pipe but prev-step stdout != pipe, halt with error.
         if (options?.stdin === "pipe" && prevStep?.options?.stdout !== "pipe") {
           return {
@@ -71,38 +74,41 @@ const process = {
           };
         }
 
-        // RUN STEP
-        if (options?.stdin === "pipe") {
-          // OPTIONS: if stdin = pipe, supply prev-step.
-          if (prevStep.resultPromise) {
-            currStep.resultPromise = process.runStep(program, args, {
-              ...options,
-            });
-            prevStep.resultPromise.pipe(currStep.resultPromise);
-          }
+        // RUN step
+        if (options?.stdin === "pipe" && prevStep.resultPromise) {
+          // options: if stdin = pipe, use prev-step.
+          currStep.resultPromise = process.runStep(program, args, {
+            ...options,
+          });
+          // STREAM
+          prevStep.resultPromise.pipe(currStep.resultPromise);
         } else {
-          // OPTIONS: if stdin != pipe, disregard prev-step.
+          // options: if stdin != pipe, disregard prev-step.
           currStep.resultPromise = process.runStep(program, args, options);
         }
+        // CACHE options:
         prevStep.options = options;
 
-        // RESOLVE RESULT-PROMISE
         const stdout = options?.stdout;
-        const stdoutIsStreaming = stdout === "pipe"; //&& options?.stdoutPipe === "stream";
+        const stdoutIsStreaming = stdout === "pipe";
         if (!stdoutIsStreaming && currStep.resultPromise) {
-          // RESOLVE PROMISE
+          // RESOLVE PROMISE (result-promise):
           const { result, error } = await process.utils.resolveResultPromise(
             currStep.resultPromise,
           );
+
+          // SUCCESS HANDLING when promise resolves:
           // if no execa-errors, record result and print progress message:
           if (result) {
+            // CACHE resolved result:
             currStep.result = result;
             process.utils.printProgressMessage(currentStep.description);
-            // if execa-errors:
           } else if (error) {
-            // ERROR HANDLING: in case of Step failure caught by execa.
+            // ERROR HANDLING when execa errors:
+            // Empty the cache:
             prevStep.result = undefined;
             prevStep.resultPromise = undefined;
+            // Return unsuccessful:
             return {
               successful: false,
               errorMessages: [
