@@ -55,12 +55,6 @@ const verbs: Segment = {
         steps: [
           {
             type: "process",
-            program: "git",
-            args: ["branch", "--color=always"],
-            options: { stdout: "inherit" },
-          },
-          {
-            type: "process",
             program: "prompt",
             args: ["New branch name: ", "--type", "string", "--null"],
             // stdin from terminal, stderr to terminal, stdout to buffer
@@ -80,12 +74,6 @@ const verbs: Segment = {
         name: "branch delete",
         requirements: [programs.git, programs.amirab_prompt],
         steps: [
-          {
-            type: "process",
-            program: "git",
-            args: ["branch", "--color=always"],
-            options: { stdout: "inherit" },
-          },
           {
             type: "process",
             program: "prompt",
