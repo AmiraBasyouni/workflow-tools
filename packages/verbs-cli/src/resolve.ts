@@ -17,7 +17,15 @@ function getErrorMessage({
 }
 
 function getAlternativeVerbs() {
-  return ["branch list", "branch create"];
+  return [
+    "branch list",
+    "branch create",
+    "branch delete",
+    "tag list",
+    "tag create lightweight",
+    "tag create annotated",
+    "tag delete",
+  ];
 }
 
 function resolve(
