@@ -15,6 +15,7 @@ type Workflow = {
 type Context = {
   params?: string[];
   cwd: string;
+  array: string[];
 };
 
 interface Requirement {
@@ -35,9 +36,9 @@ type Process = {
 
 // execa options + my own internal cache
 type ProcessOptions = {
-  stderr?: StdoutStderrOption | "buffer";
-  stdin?: StdinOption | "buffer";
-  stdout?: StdoutStderrOption | "buffer";
+  stderr?: StdoutStderrOption | "buffer" | "context";
+  stdin?: StdinOption | "buffer" | "context";
+  stdout?: StdoutStderrOption | "buffer" | "context";
   timeout?: Options["timeout"];
 };
 

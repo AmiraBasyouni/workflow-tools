@@ -22,7 +22,7 @@ function core(cwd: string, args: string[]) {
 
   // CORE LOGIC
   const { workflow, params } = resolvedArgs;
-  const context = { params, cwd };
+  const context = { params, cwd, array: [""] };
   executor({ workflow, context });
 }
 

@@ -73,8 +73,20 @@ const process = {
             ],
           };
         }
+        // VALIDATE context:
+        // If current step stdin = context but context is empty
+        if (options?.stdin === "context" && context.array.length < 2) {
+          return {
+            successful: false,
+            errorMessages: [
+              `Failed to run step: ${JSON.stringify(currentStep)}.`,
+              "Context error:",
+              "  Context is empty.",
+            ],
+          };
+        }
 
-        // RUN step
+        // RUN step: ---------------------------------------------------------------------------------
         if (options?.stdin === "pipe" && prevStep.resultPromise) {
           // options: if stdin = pipe, use prev-step.
           currStep.resultPromise = process.runStep(program, args, {
@@ -84,10 +96,60 @@ const process = {
           prevStep.resultPromise.pipe(currStep.resultPromise);
         } else if (options?.stdin === "buffer" && prevStep.result?.stdout) {
           // options: if stdin = buffer, use prev-step.
-          process.runStep(program, args, {
+          currStep.resultPromise = process.runStep(program, args, {
             ...options,
             stdin: [[prevStep.result.stdout]],
           });
+        } else if (options?.stdin === "context" && context.array.length > 1) {
+          // options: if stdin = context,
+          // replace CONTEXT_1 with context.array[1], CONTEXT_2 with context.array[2], etc.
+          const contextFlags = {
+            argsContainsContextVariable: false,
+            contextNotFound: { bool: false, variable: "" },
+          };
+          const newArgs = args.map((arg) => {
+            // look for format "CONTEXT_<number>"
+            if (/^CONTEXT_\d+$/.test(arg)) {
+              // extract the number
+              const match = arg.match(/\d+$/);
+              const number = match ? Number(match[0]) : undefined;
+              // if a context exists at said number, replace arg with context
+              if (number && context.array[number]) {
+                contextFlags.argsContainsContextVariable = true;
+                return context.array[number];
+              } else {
+                contextFlags.contextNotFound.bool = true;
+                contextFlags.contextNotFound.variable = arg;
+                return arg;
+              }
+            } else {
+              return arg;
+            }
+          });
+          if (!contextFlags.argsContainsContextVariable) {
+            // if stdin = context but args doesn't contain a context variable,
+            return {
+              successful: false,
+              errorMessages: [
+                `Failed to run step: ${JSON.stringify(currentStep)}.`,
+                "Context error:",
+                `  Missing context variable.`,
+                `  stdin = 'context' but args does not contain a context variable (e.g. CONTEXT_1).`,
+              ],
+            };
+          } else if (contextFlags.contextNotFound.bool) {
+            // if stdin = context but a context variable doesn't successfully map to a value,
+            return {
+              successful: false,
+              errorMessages: [
+                `Failed to run step: ${JSON.stringify(currentStep)}.`,
+                "Context error:",
+                `  Failed to retrieve context variable ${contextFlags.contextNotFound.variable}.`,
+              ],
+            };
+          }
+          // run step with resolved context variables.
+          currStep.resultPromise = process.runStep(program, newArgs);
         } else {
           // options: if stdin != pipe/buffer, disregard prev-step.
           currStep.resultPromise = process.runStep(program, args, options);
@@ -129,13 +191,30 @@ const process = {
           );
         }
 
-        // CACHE STEP
+        // CACHE step: ---------------------------------------------------------------------------------
         if (options?.stdout === "pipe") {
           prevStep.result = undefined;
           prevStep.resultPromise = currStep.resultPromise;
         } else {
           prevStep.result = currStep.result;
           prevStep.resultPromise = undefined;
+        }
+
+        // STORE CONTEXT
+        if (options?.stdout === "context") {
+          const result = currStep.result?.stdout;
+          if (typeof result === "string") {
+            context.array.push(result);
+          } else {
+            return {
+              successful: false,
+              errorMessages: [
+                `Context error:`,
+                `  Output is not a string.`,
+                `  stdout = context, expected a string but received: ${typeof result}.`,
+              ],
+            };
+          }
         }
 
         // ERROR HANDLING: in case of Step failure not caught by execa.
@@ -153,11 +232,7 @@ const process = {
     return { successful: true };
   },
   runStep(program: string, args: string[], stepOptions?: StepOptions) {
-    const {
-      stdin,
-      stdout,
-      stderr,
-    } = stepOptions ?? {};
+    const { stdin, stdout, stderr } = stepOptions ?? {};
 
     // SET EXECA OPTIONS:
     // "timeout" is in milliseconds.
@@ -167,9 +242,9 @@ const process = {
     // stdin: 'inherit', stdout: 'inherit', stderr: 'inherit', direct everything to the terminal.
     const execaOptions: Options = {
       ...stepOptions,
-      stdin: stdin === "buffer" ? undefined : stdin,
-      stdout: stdout === "buffer" ? undefined : stdout,
-      stderr: stderr === "buffer" ? undefined : stderr,
+      stdin: stdin === "buffer" || stdin === "context" ? undefined : stdin,
+      stdout: stdout === "buffer" || stdout === "context" ? undefined : stdout,
+      stderr: stderr === "buffer" || stderr === "context" ? undefined : stderr,
       reject: false,
     };
 
