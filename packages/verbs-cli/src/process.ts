@@ -149,7 +149,7 @@ const process = {
             };
           }
           // run step with resolved context variables.
-          currStep.resultPromise = process.runStep(program, newArgs);
+          currStep.resultPromise = process.runStep(program, newArgs, options);
         } else {
           // options: if stdin != pipe/buffer, disregard prev-step.
           currStep.resultPromise = process.runStep(program, args, options);
