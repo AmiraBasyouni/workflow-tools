@@ -2,7 +2,7 @@ import { Step, StepOptions, Context } from "./types.js";
 import { Result, ResultPromise } from "execa";
 
 import { execa, Options } from "execa";
-import verify from "./verify.js";
+import verify from "./validation.js";
 
 const process = {
   async runSteps(steps: Step[], context: Context) {
@@ -30,7 +30,7 @@ const process = {
 
       try {
         // VALIDATE current step:
-        const stepValidity = verify.stepValidity(currentStep);
+        const stepValidity = verify.step(currentStep);
         if (!stepValidity.valid) {
           return {
             successful: false,
@@ -102,10 +102,11 @@ const process = {
           });
         } else if (options?.stdin === "context" && context.array.length > 1) {
           // options: if stdin = context,
+
           // replace CONTEXT_1 with context.array[1], CONTEXT_2 with context.array[2], etc.
           const contextFlags = {
             argsContainsContextVariable: false,
-            contextNotFound: { bool: false, variable: "" },
+            contextVariableNotFound: { bool: false, variable: "" },
           };
           const newArgs = args.map((arg) => {
             // look for format "CONTEXT_<number>"
@@ -118,14 +119,15 @@ const process = {
                 contextFlags.argsContainsContextVariable = true;
                 return context.array[number];
               } else {
-                contextFlags.contextNotFound.bool = true;
-                contextFlags.contextNotFound.variable = arg;
+                contextFlags.contextVariableNotFound.bool = true;
+                contextFlags.contextVariableNotFound.variable = arg;
                 return arg;
               }
             } else {
               return arg;
             }
           });
+
           if (!contextFlags.argsContainsContextVariable) {
             // if stdin = context but args doesn't contain a context variable,
             return {
@@ -137,17 +139,18 @@ const process = {
                 `  stdin = 'context' but args does not contain a context variable (e.g. CONTEXT_1).`,
               ],
             };
-          } else if (contextFlags.contextNotFound.bool) {
+          } else if (contextFlags.contextVariableNotFound.bool) {
             // if stdin = context but a context variable doesn't successfully map to a value,
             return {
               successful: false,
               errorMessages: [
                 `Failed to run step: ${JSON.stringify(currentStep)}.`,
                 "Context error:",
-                `  Failed to retrieve context variable ${contextFlags.contextNotFound.variable}.`,
+                `  Failed to retrieve context variable ${contextFlags.contextVariableNotFound.variable}.`,
               ],
             };
           }
+
           // run step with resolved context variables.
           currStep.resultPromise = process.runStep(program, newArgs, options);
         } else {

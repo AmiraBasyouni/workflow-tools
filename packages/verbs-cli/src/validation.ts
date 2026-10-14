@@ -5,28 +5,28 @@ import path from "node:path";
 import process from "./process.js";
 
 const verify = {
-  cwdValidity(cwd: unknown) {
+  cwd(cwd: unknown) {
     if (typeof cwd != "string") {
-      const error = `Invalid cwd. A cwd must be of type string, received type ${typeof cwd}.`;
-      return { isValidCWD: false, error };
+      const cwdError = `Invalid cwd. A cwd must be of type string, received type ${typeof cwd}.`;
+      return { isValidCWD: false, cwdError };
     }
 
     if (cwd === "") {
-      const error = `Invalid cwd. The provided cwd is an empty string: ${cwd}.`;
-      return { isValidCWD: false, error };
+      const cwdError = `Invalid cwd. The provided cwd is an empty string: ${cwd}.`;
+      return { isValidCWD: false, cwdError };
     }
 
     const resolvedPath = path.resolve(cwd);
     const stat = fs.statSync(resolvedPath);
 
     if (!stat.isDirectory()) {
-      const error = `Invalid cwd. The provided cwd is not a directory: ${cwd}.`;
-      return { isValidCWD: false, error };
+      const cwdError = `Invalid cwd. The provided cwd is not a directory: ${cwd}.`;
+      return { isValidCWD: false, cwdError };
     }
 
     if (!fs.existsSync(resolvedPath)) {
-      const error = `Invalid cwd. The provided cwd does not exist: ${cwd}.`;
-      return { isValidCWD: false, error };
+      const cwdError = `Invalid cwd. The provided cwd does not exist: ${cwd}.`;
+      return { isValidCWD: false, cwdError };
     }
 
     return { isValidCWD: true };
@@ -68,7 +68,7 @@ const verify = {
           : failedRequirements,
     };
   },
-  stepValidity(step: unknown) {
+  step(step: unknown) {
     const errors = {
       invalidStep: false,
       invalidType: false,

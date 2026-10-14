@@ -1,11 +1,11 @@
-import verify from "./verify.js";
+import verify from "./validation.js";
 import resolve from "./resolve.js";
 import format from "./format.js";
 import executor from "./executor.js";
 
 function core(cwd: string, args: string[]) {
   // INPUT VALIDATION
-  const { isValidCWD, error: cwdError } = verify.cwdValidity(cwd);
+  const { isValidCWD, cwdError } = verify.cwd(cwd);
   const resolvedArgs = resolve(args);
 
   // ERROR HANDLING
@@ -15,7 +15,8 @@ function core(cwd: string, args: string[]) {
   } else if ("error" in resolvedArgs) {
     console.error("\nError: " + resolvedArgs.error + "\n");
     console.error(
-      "Available Verbs: \n" + format.bulletList(resolvedArgs.alternativeVerbs, 2),
+      "Available Verbs: \n" +
+        format.bulletList(resolvedArgs.alternativeVerbs, 2),
     );
     process.exit(1);
   }

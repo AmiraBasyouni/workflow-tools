@@ -1,6 +1,6 @@
 import { Workflow, Context, Requirement } from "./types.js";
 
-import verify from "./verify.js";
+import verify from "./validation.js";
 import runtime from "./runtime.js";
 import format from "./format.js";
 
@@ -11,18 +11,19 @@ async function executor({
   workflow: Workflow;
   context: Context;
 }) {
-  // INPUT VALIDATION
-  const verification = await verify.workflowRequirements({ workflow, context });
+  // WORKFLOW REQUIREMENTS VALIDATION
+  const { failedRequirements, allArePassing } =
+    await verify.workflowRequirements({ workflow, context });
 
   // ERROR HANDLING
-  if (!verification.allArePassing && verification.failedRequirements) {
+  if (!allArePassing && failedRequirements) {
     const errorMessage = handleFailedRequirements(
-      verification.failedRequirements,
+      failedRequirements,
       workflow.name,
     );
     console.error("\nError: " + errorMessage);
     process.exit(1);
-  } else if (!verification.allArePassing && !verification.failedRequirements) {
+  } else if (!allArePassing && !failedRequirements) {
     console.error(
       "\nError: Workflow requirements did not pass. Failed requirements could not be detected.",
     );
@@ -30,7 +31,7 @@ async function executor({
   }
 
   // CORE LOGIC
-  if (verification.allArePassing) {
+  if (allArePassing) {
     runtime({ workflow, context });
   }
 }
