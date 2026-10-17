@@ -8,7 +8,7 @@ type Segment = {
 type Workflow = {
   name: string;
   requirements: Requirement[];
-  params?: string[];
+  paramsCount?: number;
   steps: Process[];
 };
 
@@ -37,7 +37,7 @@ type Process = {
 // execa options + my own internal cache
 type ProcessOptions = {
   stderr?: StdoutStderrOption | "buffer" | "context";
-  stdin?: StdinOption | "buffer" | "context";
+  stdin?: StdinOption | "buffer" | "context" | "param";
   stdout?: StdoutStderrOption | "buffer" | "context";
   timeout?: Options["timeout"];
 };

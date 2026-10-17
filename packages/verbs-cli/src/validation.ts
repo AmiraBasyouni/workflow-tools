@@ -7,29 +7,29 @@ import process from "./process.js";
 const verify = {
   cwd(cwd: unknown) {
     if (typeof cwd != "string") {
-      const cwdError = `Invalid cwd. A cwd must be of type string, received type ${typeof cwd}.`;
-      return { isValidCWD: false, cwdError };
+      const errorMessage = `Invalid cwd. A cwd must be of type string, received type ${typeof cwd}.`;
+      return { valid: false, error: { message: errorMessage } };
     }
 
     if (cwd === "") {
-      const cwdError = `Invalid cwd. The provided cwd is an empty string: ${cwd}.`;
-      return { isValidCWD: false, cwdError };
+      const errorMessage = `Invalid cwd. The provided cwd is an empty string: ${cwd}.`;
+      return { valid: false, error: { message: errorMessage } };
     }
 
     const resolvedPath = path.resolve(cwd);
     const stat = fs.statSync(resolvedPath);
 
     if (!stat.isDirectory()) {
-      const cwdError = `Invalid cwd. The provided cwd is not a directory: ${cwd}.`;
-      return { isValidCWD: false, cwdError };
+      const errorMessage = `Invalid cwd. The provided cwd is not a directory: ${cwd}.`;
+      return { valid: false, error: { message: errorMessage } };
     }
 
     if (!fs.existsSync(resolvedPath)) {
-      const cwdError = `Invalid cwd. The provided cwd does not exist: ${cwd}.`;
-      return { isValidCWD: false, cwdError };
+      const errorMessage = `Invalid cwd. The provided cwd does not exist: ${cwd}.`;
+      return { valid: false, error: { message: errorMessage } };
     }
 
-    return { isValidCWD: true };
+    return { valid: true };
   },
   async workflowRequirements({
     workflow,
@@ -60,13 +60,15 @@ const verify = {
       .filter((req) => !req.passing)
       .map((req) => req.requirement);
 
-    return {
-      allArePassing,
-      failedRequirements:
-        allArePassing && failedRequirements.length === 0
-          ? undefined
-          : failedRequirements,
-    };
+    if (allArePassing && failedRequirements.length === 0) {
+      return { valid: true, requirements: statuses };
+    } else {
+      return {
+        valid: false,
+        error: { failedRequirements },
+        requirements: statuses,
+      };
+    }
   },
   step(step: unknown) {
     const errors = {
@@ -140,6 +142,27 @@ const verify = {
       return { valid: false, errors, errorMessages };
     } else {
       return { valid: true, errors };
+    }
+  },
+  workflowParams(
+    allowedNumberOfParams: number,
+    params: string[],
+    workflowName: string,
+  ) {
+    // VALIDATE params:
+    // If user provided incorrect number of params
+    if (params.length > 0 && allowedNumberOfParams != params.length) {
+      return {
+        valid: false,
+        error: {
+          messages: [
+            `Expected ${allowedNumberOfParams} params, received ${params.length}.`,
+            `To run workflow using prompts, run the command: verb ${workflowName}`,
+          ],
+        },
+      };
+    } else {
+      return { valid: true };
     }
   },
 };

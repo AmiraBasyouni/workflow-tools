@@ -11,42 +11,59 @@ async function executor({
   workflow: Workflow;
   context: Context;
 }) {
-  // WORKFLOW REQUIREMENTS VALIDATION
-  const { failedRequirements, allArePassing } =
-    await verify.workflowRequirements({ workflow, context });
+  // WORKFLOW VALIDATION
+  const requirementStatus = await verify.workflowRequirements({
+    workflow,
+    context,
+  });
+  const paramStatus = verify.workflowParams(
+    (workflow.paramsCount ??= 0),
+    (context.params ??= []),
+    workflow.name,
+  );
 
   // ERROR HANDLING
-  if (!allArePassing && failedRequirements) {
-    const errorMessage = handleFailedRequirements(
-      failedRequirements,
+  if (requirementStatus.error) {
+    const errorMessage = getRequirementErrorMessage(
+      requirementStatus.error.failedRequirements,
       workflow.name,
     );
-    console.error("\nError: " + errorMessage);
+    console.error(errorMessage);
     process.exit(1);
-  } else if (!allArePassing && !failedRequirements) {
-    console.error(
-      "\nError: Workflow requirements did not pass. Failed requirements could not be detected.",
+  }
+
+  if (paramStatus.error) {
+    console.error("\nError: ");
+    paramStatus.error.messages.forEach((message) =>
+      console.error("  " + message),
     );
+    console.error("");
     process.exit(1);
   }
 
   // CORE LOGIC
-  if (allArePassing) {
+  if (requirementStatus.valid && paramStatus.valid) {
     runtime({ workflow, context });
   }
 }
 
-function handleFailedRequirements(
+function getRequirementErrorMessage(
   failedRequirements: Requirement[],
   workflowName: string,
 ) {
-  const message = `Failed to run workflow: "${workflowName}".\n\nRequirements not met:\n`;
-  const bullets = failedRequirements.map(
-    (req) =>
-      `Expected: ${req.description}\nFix: ${req.fulfillmentInstructions}`,
-  );
-  const list = format.numberedList(bullets, 2);
-  return message + list;
+  if (failedRequirements.length === 0) {
+    const errorMessage =
+      "\nError: Workflow requirements did not pass. Failed requirements could not be detected.";
+    return errorMessage;
+  } else {
+    const errorMessage = `\nError: Failed to run workflow: "${workflowName}".\n\nRequirements not met:\n`;
+    const bullets = failedRequirements.map(
+      (req) =>
+        `Expected: ${req.description}\nFix: ${req.fulfillmentInstructions}`,
+    );
+    const list = format.numberedList(bullets, 2);
+    return errorMessage + list;
+  }
 }
 
 export default executor;

@@ -4,8 +4,10 @@ import { Result, ResultPromise } from "execa";
 import { execa, Options } from "execa";
 import verify from "./validation.js";
 
+type Response = { successful: boolean; errorMessages?: string[] };
+
 const process = {
-  async runSteps(steps: Step[], context: Context) {
+  async runSteps(steps: Step[], context: Context): Promise<Response> {
     // CACHE previous step:
     const prevStep: {
       result: Result | undefined;
@@ -75,7 +77,7 @@ const process = {
         }
         // VALIDATE context:
         // If current step stdin = context but context is empty
-        if (options?.stdin === "context" && context.array.length < 2) {
+        if (options?.stdin === "context" && context.array.length < 1) {
           return {
             successful: false,
             errorMessages: [
@@ -102,57 +104,44 @@ const process = {
           });
         } else if (options?.stdin === "context" && context.array.length > 1) {
           // options: if stdin = context,
-
-          // replace CONTEXT_1 with context.array[1], CONTEXT_2 with context.array[2], etc.
-          const contextFlags = {
-            argsContainsContextVariable: false,
-            contextVariableNotFound: { bool: false, variable: "" },
-          };
-          const newArgs = args.map((arg) => {
-            // look for format "CONTEXT_<number>"
-            if (/^CONTEXT_\d+$/.test(arg)) {
-              // extract the number
-              const match = arg.match(/\d+$/);
-              const number = match ? Number(match[0]) : undefined;
-              // if a context exists at said number, replace arg with context
-              if (number && context.array[number]) {
-                contextFlags.argsContainsContextVariable = true;
-                return context.array[number];
-              } else {
-                contextFlags.contextVariableNotFound.bool = true;
-                contextFlags.contextVariableNotFound.variable = arg;
-                return arg;
-              }
-            } else {
-              return arg;
-            }
-          });
-
-          if (!contextFlags.argsContainsContextVariable) {
-            // if stdin = context but args doesn't contain a context variable,
-            return {
-              successful: false,
-              errorMessages: [
-                `Failed to run step: ${JSON.stringify(currentStep)}.`,
-                "Context error:",
-                `  Missing context variable.`,
-                `  stdin = 'context' but args does not contain a context variable (e.g. CONTEXT_1).`,
-              ],
-            };
-          } else if (contextFlags.contextVariableNotFound.bool) {
-            // if stdin = context but a context variable doesn't successfully map to a value,
-            return {
-              successful: false,
-              errorMessages: [
-                `Failed to run step: ${JSON.stringify(currentStep)}.`,
-                "Context error:",
-                `  Failed to retrieve context variable ${contextFlags.contextVariableNotFound.variable}.`,
-              ],
-            };
+          // replace CONTEXT_1 with CONTEXT[0], CONTEXT_2 with CONTEXT[1], etc.
+          const argsWithContext = process.utils.replaceVariable(
+            args,
+            context.array,
+            "context",
+            currentStep,
+          );
+          // ERROR HANDLING
+          if (argsWithContext.error) {
+            return argsWithContext.error;
+          } else {
+            // run step with resolved context variables.
+            currStep.resultPromise = process.runStep(
+              program,
+              argsWithContext.newArgs,
+              options,
+            );
           }
-
-          // run step with resolved context variables.
-          currStep.resultPromise = process.runStep(program, newArgs, options);
+        } else if (options?.stdin === "param") {
+          // options: if stdin = param,
+          // replace PARAM_1 with param[0], PARAM_2 with param[1], etc.
+          const argsWithParams = process.utils.replaceVariable(
+            args,
+            (context.params = []),
+            "param",
+            currentStep,
+          );
+          // ERROR HANDLING
+          if (argsWithParams.error) {
+            return argsWithParams.error;
+          } else {
+            // run step with resolved context variables.
+            currStep.resultPromise = process.runStep(
+              program,
+              argsWithParams.newArgs,
+              options,
+            );
+          }
         } else {
           // options: if stdin != pipe/buffer, disregard prev-step.
           currStep.resultPromise = process.runStep(program, args, options);
@@ -245,7 +234,10 @@ const process = {
     // stdin: 'inherit', stdout: 'inherit', stderr: 'inherit', direct everything to the terminal.
     const execaOptions: Options = {
       ...stepOptions,
-      stdin: stdin === "buffer" || stdin === "context" ? undefined : stdin,
+      stdin:
+        stdin === "buffer" || stdin === "context" || stdin === "param"
+          ? undefined
+          : stdin,
       stdout: stdout === "buffer" || stdout === "context" ? undefined : stdout,
       stderr: stderr === "buffer" || stderr === "context" ? undefined : stderr,
       reject: false,
@@ -274,6 +266,65 @@ const process = {
       if (message) {
         console.log(message);
       }
+    },
+    // REPLACE VARIABLE
+    replaceVariable(
+      args: string[],
+      values: string[],
+      variable: string,
+      currentStep: Step,
+    ) {
+      // replace VARIABLE_1 with values[0], VARIABLE_2 with values[1], etc.
+      const contextFlags = {
+        argsContainsVariable: false,
+        variableNotFound: { bool: false, variable: "" },
+      };
+      const newArgs = args.map((arg) => {
+        // look for format "VARIABLE_<number>"
+        const regex = new RegExp(`^${variable.toUpperCase()}_\\d+$`);
+        if (regex.test(arg)) {
+          // extract the number
+          const match = arg.match(/\d+$/);
+          const number = match ? Number(match[0]) : undefined;
+          // if a value exists at number - 1, replace arg with value
+          if (number && values[number - 1]) {
+            contextFlags.argsContainsVariable = true;
+            return values[number - 1];
+          } else {
+            contextFlags.variableNotFound.bool = true;
+            contextFlags.variableNotFound.variable = arg;
+            return arg;
+          }
+        } else {
+          return arg;
+        }
+      });
+      if (!contextFlags.argsContainsVariable) {
+        // if stdin = context but args doesn't contain a context variable,
+        const error = {
+          successful: false,
+          errorMessages: [
+            `Failed to run step: ${JSON.stringify(currentStep)}.`,
+            "Context error:",
+            `  Missing context variable.`,
+            `  stdin = 'context' but args does not contain a context variable (e.g. CONTEXT_1).`,
+          ],
+        };
+        return { newArgs: [], error };
+      } else if (contextFlags.variableNotFound.bool) {
+        // if stdin = context but a context variable doesn't successfully map to a value,
+        const error = {
+          successful: false,
+          errorMessages: [
+            `Failed to run step: ${JSON.stringify(currentStep)}.`,
+            "Context error:",
+            `  Failed to retrieve context variable ${contextFlags.variableNotFound.variable}.`,
+          ],
+        };
+        return { newArgs: [], error };
+      }
+
+      return { newArgs };
     },
   },
 };

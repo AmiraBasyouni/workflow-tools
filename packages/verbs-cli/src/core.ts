@@ -5,25 +5,25 @@ import executor from "./executor.js";
 
 function core(cwd: string, args: string[]) {
   // INPUT VALIDATION
-  const { isValidCWD, cwdError } = verify.cwd(cwd);
+  const cwdStatus = verify.cwd(cwd);
   const resolvedArgs = resolve(args);
 
   // ERROR HANDLING
-  if (!isValidCWD) {
-    console.error("\nError: " + cwdError);
+  if (cwdStatus.error) {
+    console.error("\nError: " + cwdStatus.error.message);
     process.exit(1);
-  } else if ("error" in resolvedArgs) {
-    console.error("\nError: " + resolvedArgs.error + "\n");
+  } else if (resolvedArgs.error) {
+    console.error("\nError: " + resolvedArgs.error.message + "\n");
     console.error(
       "Available Verbs: \n" +
-        format.bulletList(resolvedArgs.alternativeVerbs, 2),
+        format.bulletList(resolvedArgs.error.alternativeVerbs, 2),
     );
     process.exit(1);
   }
 
   // CORE LOGIC
   const { workflow, params } = resolvedArgs;
-  const context = { params, cwd, array: [""] };
+  const context = { cwd, params, array: [] };
   executor({ workflow, context });
 }
 

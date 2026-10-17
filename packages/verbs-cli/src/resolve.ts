@@ -2,18 +2,12 @@ import { Workflow, Segment } from "./types.js";
 
 import verbs from "./verbs.js";
 
-function getErrorMessage({
-  verb,
-  message,
-}: {
-  verb: string[];
-  message: string;
-}) {
+function getError({ verb, message }: { verb: string[]; message: string }) {
   // Capture verb as a string.
   const verbString = verb.join(" ");
   const errorMessage =
     `Invalid verb. ` + message + ` Received: "${verbString}".`;
-  return errorMessage;
+  return { message: errorMessage, alternativeVerbs: getAlternativeVerbs() };
 }
 
 function getAlternativeVerbs() {
@@ -31,27 +25,27 @@ function getAlternativeVerbs() {
 function resolve(
   verb: string[],
 ):
-  | { workflow: Workflow; params: string[] }
-  | { error: string; alternativeVerbs: string[] } {
+  | { workflow: Workflow; params: string[]; error?: never }
+  | { error: { message: string; alternativeVerbs: string[] } } {
   let currentNode: Segment = verbs;
   // Traverse segments until workflow is found.
   for (let i = 0; i < verb.length; i++) {
     const segment = verb[i];
     if (segment === "workflow") {
-      const errorMessage = getErrorMessage({
+      const error = getError({
         verb,
         message: 'The key "workflow" is reserved.',
       });
-      return { error: errorMessage, alternativeVerbs: getAlternativeVerbs() };
+      return { error };
     }
     const nextNode = currentNode[segment] as Segment | undefined;
     if (typeof nextNode === "undefined") {
       // It's undefined, throw an error.
-      const errorMessage = getErrorMessage({
+      const error = getError({
         verb,
         message: "The verb does not exist.",
       });
-      return { error: errorMessage, alternativeVerbs: getAlternativeVerbs() };
+      return { error };
     } else if ("workflow" in nextNode && nextNode.workflow) {
       // It's a workflow, return workflow and params.
       const workflow = nextNode.workflow;
@@ -63,11 +57,11 @@ function resolve(
     }
   }
   // Ended on a segment, throw an error.
-  const errorMessage = getErrorMessage({
+  const error = getError({
     verb,
     message: "The verb does not map to a workflow.",
   });
-  return { error: errorMessage, alternativeVerbs: getAlternativeVerbs() };
+  return { error };
 }
 
 export default resolve;
