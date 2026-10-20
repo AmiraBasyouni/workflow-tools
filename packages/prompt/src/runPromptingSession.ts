@@ -1,11 +1,12 @@
 import interaction from "./interaction.js";
 import validator, { ValidationSchema } from "./validator.js";
-import { UserResponse } from "./output.js";
+import { SessionResponse } from "./types.js";
 
-async function session(
+async function runPromptingSession(
   prompt: string,
   schema: ValidationSchema,
-): Promise<UserResponse> {
+): Promise<SessionResponse> {
+
   // START INTERACTION
   const { rl, ask } = interaction.start();
 
@@ -27,20 +28,16 @@ async function session(
 
     // INPUT VALIDATION
     const result = validator.validate(answer, schema);
-    if (result.success) {
+    if (result.valid) {
       // END INTERACTION (valid input)
       interaction.end(rl);
       return { successful: true, exitCode: 0, data: result.data };
     }
-    if (!result.success) {
-      // Print validation errors then loop.
-      console.error("\nInvalid input:");
-      for (const errorMessage of result.errors) {
-        console.error(`* ${errorMessage}`);
-      }
-      console.error();
+    if (!result.valid) {
+      validator.printValidationErrors(result.errors);
     }
   }
+
 }
 
-export default session;
+export default runPromptingSession;

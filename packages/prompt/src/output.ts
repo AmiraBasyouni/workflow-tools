@@ -1,21 +1,16 @@
-type UserResponse = {
-  successful: boolean;
-  exitCode: number;
-  data: string | number | null;
-};
+import { SessionResponse } from "./types.js";
 
-function output(userResponse: UserResponse, isNullTerminated: boolean) {
-  if (!userResponse.successful) {
+function output(sessionResponse: SessionResponse, isNullTerminated: boolean) {
+  if (!sessionResponse.successful) {
     // The user can cancel the session.
-    console.error(`Exit code: ${userResponse.exitCode}.`);
-    process.exit(userResponse.exitCode);
-  } else if (userResponse.successful) {
+    console.error(`Exit code: ${sessionResponse.exitCode}.`);
+    process.exit(sessionResponse.exitCode);
+  } else if (sessionResponse.successful) {
     // Print the valid output to stdout so shell scripts can capture it.
     process.stdout.write(
-      `${userResponse.data}${isNullTerminated ? "\0" : "\n"}`,
+      `${sessionResponse.data}${isNullTerminated ? "\0" : "\n"}`,
     );
   }
 }
 
-export { UserResponse };
 export default output;

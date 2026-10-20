@@ -11,10 +11,6 @@ type FlagValues = {
 
 export type ValidationSchema = z.ZodType<string | number>;
 
-export type ValidationResult =
-  | { success: true; data: string | number }
-  | { success: false; errors: string[] };
-
 const validator = {
   // Build Zod Schema from parsed flags
   buildSchemaFromFlags(flagValues: FlagValues): z.ZodType<string | number> {
@@ -65,16 +61,30 @@ const validator = {
     return schema;
   },
 
-  validate(input: string, schema: ValidationSchema): ValidationResult {
+  validate(
+    input: string,
+    schema: ValidationSchema,
+  ):
+    | { valid: true; data: string | number }
+    | { valid: false; errors: string[] } {
     // parse without throwing an exception
     const result = schema.safeParse(input.trim());
     if (result.success) {
-      return { success: true, data: result.data };
+      return { valid: true, data: result.data };
     }
     return {
-      success: false,
+      valid: false,
       errors: result.error.issues.map((issue) => issue.message),
     };
+  },
+
+  printValidationErrors(errors: string[]) {
+    // Print validation errors then loop.
+    console.error("\nInvalid input:");
+    for (const errorMessage of errors) {
+      console.error(`* ${errorMessage}`);
+    }
+    console.error();
   },
 };
 
