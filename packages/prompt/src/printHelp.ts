@@ -27,6 +27,9 @@ Options:
 
   --null
       Terminate output with a NUL character instead of a newline.
+
+  --answer
+      Validate answer. Skips prompting if answer is valid.
 `);
 }
 
