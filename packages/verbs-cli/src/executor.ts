@@ -16,14 +16,15 @@ async function executor({
     workflow,
     context,
   });
-  const paramStatus = verify.workflowParams(
-    (workflow.paramsCount ??= 0),
+  const paramStatus = verify.params(
+    (workflow.paramSpec ??= { count: 0, required: false }),
     (context.params ??= []),
     workflow.name,
   );
 
   // ERROR HANDLING
   if (requirementStatus.error) {
+    console.error("\nError: Failed workflow requirements.");
     const errorMessage = getRequirementErrorMessage(
       requirementStatus.error.failedRequirements,
       workflow.name,
@@ -33,7 +34,7 @@ async function executor({
   }
 
   if (paramStatus.error) {
-    console.error("\nError: ");
+    console.error("\nError: Invalid params.");
     paramStatus.error.messages.forEach((message) =>
       console.error("  " + message),
     );
@@ -52,11 +53,10 @@ function getRequirementErrorMessage(
   workflowName: string,
 ) {
   if (failedRequirements.length === 0) {
-    const errorMessage =
-      "\nError: Workflow requirements did not pass. Failed requirements could not be detected.";
+    const errorMessage = "\nFailed requirements could not be detected.";
     return errorMessage;
   } else {
-    const errorMessage = `\nError: Failed to run workflow: "${workflowName}".\n\nRequirements not met:\n`;
+    const errorMessage = `\nFailed to run workflow: "${workflowName}".\n\nRequirements not met:\n`;
     const bullets = failedRequirements.map(
       (req) =>
         `Expected: ${req.description}\nFix: ${req.fulfillmentInstructions}`,

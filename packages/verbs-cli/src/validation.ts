@@ -1,4 +1,4 @@
-import { Workflow, Context } from "./types.js";
+import { Workflow, Context, ParamSpec } from "./types.js";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -43,6 +43,7 @@ const verify = {
     const promises = workflow.requirements.map(async (requirement) => {
       const response = await process.runSteps(
         requirement.verificationSteps,
+        workflow.paramSpec,
         context,
       );
       if (response.successful) {
@@ -144,20 +145,47 @@ const verify = {
       return { valid: true, errors };
     }
   },
-  workflowParams(
-    allowedNumberOfParams: number,
-    params: string[],
+  params(
+    workflowParamSpec: ParamSpec,
+    providedParams: string[],
     workflowName: string,
   ) {
     // VALIDATE params:
-    // If user provided incorrect number of params
-    if (params.length > 0 && allowedNumberOfParams != params.length) {
+    if (providedParams.length > 0 && workflowParamSpec.count === 0) {
       return {
         valid: false,
         error: {
           messages: [
-            `Expected ${allowedNumberOfParams} params, received ${params.length}.`,
-            `To run workflow using prompts, run the command: verb ${workflowName}`,
+            `This workflow does not accept params.`,
+            `Expected ${workflowParamSpec.count} params, received ${providedParams.length}.`,
+            `Run workflow without params: verb ${workflowName}`,
+          ],
+        },
+      };
+    } else if (
+      providedParams.length > 0 &&
+      workflowParamSpec.count != providedParams.length
+    ) {
+      return {
+        valid: false,
+        error: {
+          messages: [
+            `This workflow can run with or without params.`,
+            `Expected 0 or ${workflowParamSpec.count} params, received ${providedParams.length}.`,
+            `To run workflow without params, use: verb ${workflowName}`,
+          ],
+        },
+      };
+    } else if (
+      providedParams.length === 0 &&
+      workflowParamSpec.required === true
+    ) {
+      return {
+        valid: false,
+        error: {
+          messages: [
+            `This workflow requires params.`,
+            `Expected ${workflowParamSpec.count} params, received ${providedParams.length}.`,
           ],
         },
       };

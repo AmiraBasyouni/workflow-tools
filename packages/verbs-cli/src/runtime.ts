@@ -10,7 +10,11 @@ async function runtime({
   context: Context;
 }) {
   try {
-    const response = await execaProcess.runSteps(workflow.steps, context);
+    const response = await execaProcess.runSteps(
+      workflow.steps,
+      workflow.paramSpec,
+      context,
+    );
     if (response.successful) {
       return;
     } else {

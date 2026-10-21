@@ -8,12 +8,14 @@ type Segment = {
 type Workflow = {
   name: string;
   requirements: Requirement[];
-  paramsCount?: number;
+  paramSpec?: ParamSpec;
   steps: Process[];
 };
 
+type ParamSpec = { count: number; required: boolean };
+
 type Context = {
-  params?: string[];
+  params: string[];
   cwd: string;
   array: string[];
 };
@@ -40,10 +42,19 @@ type ProcessOptions = {
   stdin?: StdinOption | "buffer" | "context" | "param";
   stdout?: StdoutStderrOption | "buffer" | "context";
   timeout?: Options["timeout"];
+  alt?: Process;
 };
 
 // We'll expand the Step type: Step = Process | Prompt | Filesystem.
 type Step = Process;
 type StepOptions = ProcessOptions;
 
-export { Segment, Workflow, Context, Requirement, Step, StepOptions };
+export {
+  Segment,
+  Workflow,
+  Context,
+  Requirement,
+  Step,
+  StepOptions,
+  ParamSpec,
+};

@@ -1,4 +1,4 @@
-import { Step, StepOptions, Context } from "./types.js";
+import { Step, StepOptions, Context, ParamSpec } from "./types.js";
 import { Result, ResultPromise } from "execa";
 
 import { execa, Options } from "execa";
@@ -7,7 +7,15 @@ import verify from "./validation.js";
 type Response = { successful: boolean; errorMessages?: string[] };
 
 const process = {
-  async runSteps(steps: Step[], context: Context): Promise<Response> {
+  async runSteps(
+    steps: Step[],
+    paramSpec: ParamSpec | undefined,
+    context: Context,
+  ): Promise<Response> {
+    if (!paramSpec) {
+      paramSpec = { count: 0, required: false };
+    }
+
     // CACHE previous step:
     const prevStep: {
       result: Result | undefined;
@@ -76,7 +84,7 @@ const process = {
           };
         }
         // VALIDATE context:
-        // If current step stdin = context but context is empty
+        // If current step stdin = context but context is empty.
         if (options?.stdin === "context" && context.array.length < 1) {
           return {
             successful: false,
@@ -84,6 +92,24 @@ const process = {
               `Failed to run step: ${JSON.stringify(currentStep)}.`,
               "Context error:",
               "  Context is empty.",
+            ],
+          };
+        }
+        // VALIDATE param:
+        // If current step stdin = param and workflow does not require a param, an alt process must exist.
+        if (
+          options?.stdin === "param" &&
+          !paramSpec.required &&
+          options.alt === undefined
+        ) {
+          return {
+            successful: false,
+            errorMessages: [
+              `Failed to run step: ${JSON.stringify(currentStep)}.`,
+              "Param error:",
+              "  when stdin is param and param is not required, step must contain an alternative.",
+              "  include an alternative step in options: { alt }.",
+              "  when user chooses not to provide a param, the alternative step will run.",
             ],
           };
         }
@@ -102,7 +128,7 @@ const process = {
             ...options,
             stdin: [[prevStep.result.stdout]],
           });
-        } else if (options?.stdin === "context" && context.array.length > 1) {
+        } else if (options?.stdin === "context" && context.array.length > 0) {
           // options: if stdin = context,
           // replace CONTEXT_1 with CONTEXT[0], CONTEXT_2 with CONTEXT[1], etc.
           const argsWithContext = process.utils.replaceVariable(
@@ -124,23 +150,40 @@ const process = {
           }
         } else if (options?.stdin === "param") {
           // options: if stdin = param,
-          // replace PARAM_1 with param[0], PARAM_2 with param[1], etc.
-          const argsWithParams = process.utils.replaceVariable(
-            args,
-            (context.params = []),
-            "param",
-            currentStep,
-          );
-          // ERROR HANDLING
-          if (argsWithParams.error) {
-            return argsWithParams.error;
-          } else {
-            // run step with resolved context variables.
-            currStep.resultPromise = process.runStep(
-              program,
-              argsWithParams.newArgs,
-              options,
+          // if params were provided:
+          if (context.params.length > 0) {
+            // replace PARAM_1 with param[0], PARAM_2 with param[1], etc.
+            const argsWithParams = process.utils.replaceVariable(
+              args,
+              context.params,
+              "param",
+              currentStep,
             );
+            // ERROR HANDLING
+            if (argsWithParams.error) {
+              return argsWithParams.error;
+            } else {
+              // run step with resolved context variables.
+              currStep.resultPromise = process.runStep(
+                program,
+                argsWithParams.newArgs,
+                options,
+              );
+            }
+          } else if (context.params.length === 0 && options.alt) {
+            // if params were not provided:
+            // clear stdout.
+            options.stdout = undefined;
+            // run alternative step.
+            steps.splice(i + 1, 0, options.alt);
+          } else {
+            return {
+              successful: false,
+              errorMessages: [
+                `Failed to run step: ${JSON.stringify(currentStep)}.`,
+                "Param error: Unexpected error.",
+              ],
+            };
           }
         } else {
           // options: if stdin != pipe/buffer, disregard prev-step.
@@ -275,7 +318,7 @@ const process = {
       currentStep: Step,
     ) {
       // replace VARIABLE_1 with values[0], VARIABLE_2 with values[1], etc.
-      const contextFlags = {
+      const flags = {
         argsContainsVariable: false,
         variableNotFound: { bool: false, variable: "" },
       };
@@ -287,38 +330,38 @@ const process = {
           const match = arg.match(/\d+$/);
           const number = match ? Number(match[0]) : undefined;
           // if a value exists at number - 1, replace arg with value
-          if (number && values[number - 1]) {
-            contextFlags.argsContainsVariable = true;
+          if (number && typeof values[number - 1] === "string") {
+            flags.argsContainsVariable = true;
             return values[number - 1];
           } else {
-            contextFlags.variableNotFound.bool = true;
-            contextFlags.variableNotFound.variable = arg;
+            flags.variableNotFound.bool = true;
+            flags.variableNotFound.variable = arg;
             return arg;
           }
         } else {
           return arg;
         }
       });
-      if (!contextFlags.argsContainsVariable) {
+      if (!flags.argsContainsVariable) {
         // if stdin = context but args doesn't contain a context variable,
         const error = {
           successful: false,
           errorMessages: [
             `Failed to run step: ${JSON.stringify(currentStep)}.`,
-            "Context error:",
-            `  Missing context variable.`,
-            `  stdin = 'context' but args does not contain a context variable (e.g. CONTEXT_1).`,
+            "Variable error:",
+            `  Missing variable.`,
+            `  stdin = '${variable}' but args does not contain a variable (e.g. ${variable.toUpperCase()}_1).`,
           ],
         };
         return { newArgs: [], error };
-      } else if (contextFlags.variableNotFound.bool) {
+      } else if (flags.variableNotFound.bool) {
         // if stdin = context but a context variable doesn't successfully map to a value,
         const error = {
           successful: false,
           errorMessages: [
             `Failed to run step: ${JSON.stringify(currentStep)}.`,
-            "Context error:",
-            `  Failed to retrieve context variable ${contextFlags.variableNotFound.variable}.`,
+            "Variable error:",
+            `  Failed to retrieve variable ${flags.variableNotFound.variable}.`,
           ],
         };
         return { newArgs: [], error };

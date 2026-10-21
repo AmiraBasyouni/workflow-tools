@@ -10,10 +10,12 @@ function core(cwd: string, args: string[]) {
 
   // ERROR HANDLING
   if (cwdStatus.error) {
-    console.error("\nError: " + cwdStatus.error.message);
+    console.error("\nError: invalid cwd.");
+    console.error(cwdStatus.error.message);
     process.exit(1);
   } else if (resolvedArgs.error) {
-    console.error("\nError: " + resolvedArgs.error.message + "\n");
+    console.error("\nError: unable to resolve args.");
+    console.error(resolvedArgs.error.message + "\n");
     console.error(
       "Available Verbs: \n" +
         format.bulletList(resolvedArgs.error.alternativeVerbs, 2),
@@ -23,7 +25,7 @@ function core(cwd: string, args: string[]) {
 
   // CORE LOGIC
   const { workflow, params } = resolvedArgs;
-  const context = { cwd, params, array: [] };
+  const context = { cwd, params: params ?? [], array: [] };
   executor({ workflow, context });
 }
 
