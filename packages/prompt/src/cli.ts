@@ -26,6 +26,15 @@ const { positionals, values: flagValues } = parseArgs({
   allowPositionals: true,
 });
 
+// Reject excess positional arguments
+if (positionals.length > 1) {
+    console.error(`error: expected exactly 1 prompt message, received ${positionals.length}.`);
+    console.error("hint: flags only accept one value per option.");
+    console.error('');
+    console.error('usage: prompt <message> [options]');
+    process.exit(1);
+}
+
 const args = process.argv.slice(2);
 const hasOnlyOneArg = args.length === 1;
 
