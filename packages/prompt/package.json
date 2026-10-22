@@ -1,6 +1,6 @@
 {
   "name": "@amirab/prompt",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Prompt is a simple prompting CLI.",
   "keywords": [
     "prompt",
