@@ -24,7 +24,7 @@ async function executor({
 
   // ERROR HANDLING
   if (requirementStatus.error) {
-    console.error("\nError: Failed workflow requirements.");
+    console.error("\nError: Failed workflow requirement.");
     const errorMessage = getRequirementErrorMessage(
       requirementStatus.error.failedRequirements,
       workflow.name,

@@ -42,58 +42,44 @@ const process = {
         // VALIDATE current step:
         const stepValidity = verify.step(currentStep);
         if (!stepValidity.valid) {
-          return {
-            successful: false,
-            errorMessages: [
-              `Invalid step: ${JSON.stringify(currentStep)}.`,
-              `Errors:`,
-              // error-Messages: warnings array as a string: "warning_1, warning_2, ...":
-              `${stepValidity.errorMessages?.toString()}.`,
-            ],
-          };
+          const errorMessages = [
+            `Invalid step: ${JSON.stringify(currentStep)}`,
+            // error-Messages: warnings array as a string: "warning_1, warning_2, ...":
+            `${stepValidity.errorMessages?.toString()}.`,
+          ];
+          return process.processError(errorMessages);
         }
 
         // VALIDATE options (stdin/stdout):
         // If current step stdin = pipe but prev-step stdout != pipe, halt with error.
         if (options?.stdin === "pipe" && prevStep?.options?.stdout !== "pipe") {
-          return {
-            successful: false,
-            errorMessages: [
-              `Failed to run step: ${JSON.stringify(currentStep)}.`,
-              "Pipe error:",
-              `  Previous step stdout: ${JSON.stringify(prevStep.options?.stdin)}.`,
-              `  Current step stdin: ${JSON.stringify(currentStep.options?.stdin)}.\n`,
-              `  Expected: 'Previous step stdout: "pipe".'`,
-            ],
-          };
+          const errorMessages = [
+            "Pipe error:",
+            `  Previous step stdout: ${prevStep.options?.stdin}`,
+            `  Current step stdin: ${currentStep.options?.stdin}\n`,
+            `  Expected: "Previous step stdout: pipe"`,
+          ];
+
+          return process.stepError(currentStep, errorMessages);
         } else if (options?.stdin === "pipe" && !prevStep?.resultPromise) {
           // If current step stdin = pipe & streams, prev-step should have returned a promise.
-          return {
-            successful: false,
-            errorMessages: [
-              `Failed to run step: ${JSON.stringify(currentStep)}.`,
-              "Pipe error:",
-              `  Previous step:`,
-              `    stdout: ${JSON.stringify(prevStep.options?.stdout)}.`,
-              `  Current step:`,
-              `    stdin: ${JSON.stringify(currentStep.options?.stdin)}.`,
-              `  Expected:`,
-              //`    Previous step: stdoutPipe: "stream"`,
-              `    previous step to return a promise.`,
-            ],
-          };
+          const errorMessages = [
+            "Pipe error:",
+            `  Previous step:`,
+            `    stdout: ${prevStep.options?.stdout}.`,
+            `  Current step:`,
+            `    stdin: ${currentStep.options?.stdin}.`,
+            `  Expected:`,
+            //`    Previous step: stdoutPipe: "stream"`,
+            `    previous step to return a promise.`,
+          ];
+          return process.stepError(currentStep, errorMessages);
         }
         // VALIDATE context:
         // If current step stdin = context but context is empty.
         if (options?.stdin === "context" && context.array.length < 1) {
-          return {
-            successful: false,
-            errorMessages: [
-              `Failed to run step: ${JSON.stringify(currentStep)}.`,
-              "Context error:",
-              "  Context is empty.",
-            ],
-          };
+          const errorMessages = ["Context error:", "  Context is empty."];
+          return process.stepError(currentStep, errorMessages);
         }
         // VALIDATE param:
         // If current step stdin = param and workflow does not require a param, an alt process must exist.
@@ -102,16 +88,13 @@ const process = {
           !paramSpec.required &&
           options.alt === undefined
         ) {
-          return {
-            successful: false,
-            errorMessages: [
-              `Failed to run step: ${JSON.stringify(currentStep)}.`,
-              "Param error:",
-              "  when stdin is param and param is not required, step must contain an alternative.",
-              "  include an alternative step in options: { alt }.",
-              "  when user chooses not to provide a param, the alternative step will run.",
-            ],
-          };
+          const errorMessages = [
+            "Param error:",
+            "  when stdin is param and param is not required, step must contain an alternative.",
+            "  include an alternative step in options: { alt }.",
+            "  when user chooses not to provide a param, the alternative step will run.",
+          ];
+          return process.stepError(currentStep, errorMessages);
         }
 
         // RUN step: ---------------------------------------------------------------------------------
@@ -177,13 +160,8 @@ const process = {
             // run alternative step.
             steps.splice(i + 1, 0, options.alt);
           } else {
-            return {
-              successful: false,
-              errorMessages: [
-                `Failed to run step: ${JSON.stringify(currentStep)}.`,
-                "Param error: Unexpected error.",
-              ],
-            };
+            const errorMessages = ["Param error: Unexpected error."];
+            return process.stepError(currentStep, errorMessages);
           }
         } else {
           // options: if stdin != pipe/buffer, disregard prev-step.
@@ -212,13 +190,13 @@ const process = {
             prevStep.result = undefined;
             prevStep.resultPromise = undefined;
             // Return unsuccessful:
-            return {
-              successful: false,
-              errorMessages: [
-                `Failed to execute step: ${JSON.stringify(currentStep)}.`,
-                `Execa Error: ${error.message}`,
-              ],
-            };
+            if (error.exitCode === 130) {
+              return process.stepError(currentStep, [
+                "Process terminated with exiit code 130.",
+              ]);
+            }
+            const errorMessages = [`Execa Error: ${error.message}`];
+            return process.stepError(currentStep, errorMessages);
           }
         } else if (stdoutIsStreaming && i === steps.length - 1) {
           throw new Error(
@@ -241,26 +219,19 @@ const process = {
           if (typeof result === "string") {
             context.array.push(result);
           } else {
-            return {
-              successful: false,
-              errorMessages: [
-                `Context error:`,
-                `  Output is not a string.`,
-                `  stdout = context, expected a string but received: ${typeof result}.`,
-              ],
-            };
+            const errorMessages = [
+              `Context error:`,
+              `  Output is not a string.`,
+              `  stdout = context, expected a string but received: ${typeof result}.`,
+            ];
+            return process.stepError(currentStep, errorMessages);
           }
         }
 
         // ERROR HANDLING: in case of Step failure not caught by execa.
       } catch (error) {
-        return {
-          successful: false,
-          errorMessages: [
-            `Failed to execute step: ${JSON.stringify(currentStep)}.`,
-            `${error}`,
-          ],
-        };
+        const errorMessages = [`${error}`];
+        return process.stepError(currentStep, errorMessages);
       }
     }
     // All steps have been completed successfully.
@@ -344,31 +315,48 @@ const process = {
       });
       if (!flags.argsContainsVariable) {
         // if stdin = context but args doesn't contain a context variable,
-        const error = {
-          successful: false,
-          errorMessages: [
-            `Failed to run step: ${JSON.stringify(currentStep)}.`,
-            "Variable error:",
-            `  Missing variable.`,
-            `  stdin = '${variable}' but args does not contain a variable (e.g. ${variable.toUpperCase()}_1).`,
-          ],
+        const errorMessages = [
+          "Variable error:",
+          `  Missing variable.`,
+          `  stdin = '${variable}' but args does not contain a variable (e.g. ${variable.toUpperCase()}_1).`,
+        ];
+        return {
+          newArgs: [],
+          error: process.stepError(currentStep, errorMessages),
         };
-        return { newArgs: [], error };
       } else if (flags.variableNotFound.bool) {
         // if stdin = context but a context variable doesn't successfully map to a value,
-        const error = {
-          successful: false,
-          errorMessages: [
-            `Failed to run step: ${JSON.stringify(currentStep)}.`,
-            "Variable error:",
-            `  Failed to retrieve variable ${flags.variableNotFound.variable}.`,
-          ],
+        const errorMessages = [
+          "Variable error:",
+          `  Failed to retrieve variable ${flags.variableNotFound.variable}.`,
+        ];
+        return {
+          newArgs: [],
+          error: process.stepError(currentStep, errorMessages),
         };
-        return { newArgs: [], error };
       }
 
       return { newArgs };
     },
+  },
+  processError(messages: string[]) {
+    return {
+      successful: false,
+      errorMessages: messages,
+    };
+  },
+  stepError(currentStep: Step, messages: string[]) {
+    const args = currentStep.args.map((element) =>
+      element.includes(" ") ? `"${element}"` : element,
+    );
+    return {
+      successful: false,
+      errorMessages: [
+        `Failed to execute step: ${currentStep.program} ${args.join(" ")}`,
+        ``,
+        ...messages,
+      ],
+    };
   },
 };
 

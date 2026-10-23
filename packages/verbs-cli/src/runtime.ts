@@ -18,18 +18,27 @@ async function runtime({
     if (response.successful) {
       return;
     } else {
-      console.error("\nError: workflow aborted.\n");
+      console.error("");
+      console.error("Error: workflow failed during execution.");
+      console.error("");
       response.errorMessages?.forEach((message) =>
         console.error("  " + message),
       );
+      console.error("");
+      console.error("Workflow aborted.");
       console.error("");
       process.exit(1);
       return;
     }
   } catch (e) {
-    console.error("\nError: workflow aborted.\n");
+    console.error("");
+    console.error("Error: workflow failed during execution.");
+    console.error("");
     console.error("Unexpected error:");
     console.error(e + "\n");
+    console.error("");
+    console.error("Workflow aborted.");
+    console.error("");
   }
 }
 
