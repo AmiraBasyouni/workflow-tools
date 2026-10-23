@@ -19,6 +19,7 @@ function getAlternativeVerbs() {
     "tag create lightweight",
     "tag create annotated",
     "tag delete",
+    "tag show",
   ];
 }
 

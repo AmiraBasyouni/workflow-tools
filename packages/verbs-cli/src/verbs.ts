@@ -52,13 +52,35 @@ const verbs: Segment = {
       workflow: {
         name: "branch create",
         requirements: [programs.git, programs.amirab_prompt],
+        paramSpec: { count: 1, required: false },
         steps: [
           {
             type: "process",
             program: "prompt",
-            args: ["New branch name: ", "--type", "string", "--null"],
-            // stdin from terminal, stderr to terminal, stdout as buffer
-            options: { stderr: "inherit", stdin: "inherit", stdout: "buffer" },
+            args: [
+              "Name of new branch: ",
+              "--type",
+              "string",
+              "--null",
+              "--answer",
+              "PARAM_1",
+            ],
+            options: {
+              stderr: "inherit",
+              stdin: "param",
+              stdout: "buffer",
+              alt: {
+                type: "process",
+                program: "prompt",
+                args: ["Name of new branch: ", "--type", "string", "--null"],
+                options: {
+                  // stdin from terminal, stderr to terminal, stdout as buffer
+                  stderr: "inherit",
+                  stdin: "inherit",
+                  stdout: "buffer",
+                },
+              },
+            },
           },
           {
             type: "process",
@@ -77,7 +99,7 @@ const verbs: Segment = {
           {
             type: "process",
             program: "prompt",
-            args: ["Delete branch name: ", "--type", "string", "--null"],
+            args: ["Delete branch: ", "--type", "string", "--null"],
             options: { stdin: "inherit", stdout: "buffer", stderr: "inherit" },
           },
           {
@@ -114,7 +136,7 @@ const verbs: Segment = {
             {
               type: "process",
               program: "prompt",
-              args: ["Tag name: ", "--type", "string", "--null"],
+              args: ["Name of lightweight tag: ", "--type", "string", "--null"],
               options: {
                 stdin: "inherit",
                 stdout: "buffer",
@@ -142,7 +164,7 @@ const verbs: Segment = {
             {
               type: "process",
               program: "prompt",
-              args: ["Tag name: ", "--type", "string"],
+              args: ["Name of annotated tag: ", "--type", "string"],
               options: {
                 stdin: "inherit",
                 stdout: "context",
@@ -182,7 +204,7 @@ const verbs: Segment = {
           {
             type: "process",
             program: "prompt",
-            args: ["Delete tag name: ", "--type", "string", "--null"],
+            args: ["Delete tag: ", "--type", "string", "--null"],
             options: { stdin: "inherit", stdout: "buffer", stderr: "inherit" },
           },
           {
@@ -198,12 +220,29 @@ const verbs: Segment = {
       workflow: {
         name: "tag show",
         requirements: [programs.git, programs.amirab_prompt],
+        paramSpec: { count: 1, required: false },
         steps: [
           {
+            // if param is provided, run this process:
             type: "process",
             program: "prompt",
-            args: ["Tag to show: ", "--type", "string"],
-            options: { stdin: "inherit", stdout: "context", stderr: "inherit" },
+            args: ["Show tag: ", "--type", "string", "--answer", "PARAM_1"],
+            options: {
+              stdin: "param",
+              stdout: "context",
+              stderr: "inherit",
+              // otherwise, run this alternative process:
+              alt: {
+                type: "process",
+                program: "prompt",
+                args: ["Show tag: ", "--type", "string"],
+                options: {
+                  stdin: "inherit",
+                  stdout: "context",
+                  stderr: "inherit",
+                },
+              },
+            },
           },
           {
             type: "process",
