@@ -36,7 +36,7 @@ const process = {
     // ITERATE steps:
     for (let i = 0; i < steps.length; i++) {
       const currentStep = steps[i];
-      const { program, options } = currentStep;
+      const { program, options, alt } = currentStep;
       let { args } = currentStep;
 
       try {
@@ -87,7 +87,7 @@ const process = {
         if (
           options.resolveVariable === "param" &&
           !paramSpec.required &&
-          options.alt === undefined
+          alt === undefined
         ) {
           const errorMessages = [
             "Param error:",
@@ -133,12 +133,16 @@ const process = {
               // replace args
               args = argsWithParams.newArgs;
             }
-          } else if (context.params.length === 0 && options.alt) {
+          } else if (context.params.length === 0 && alt) {
             // if params were not provided:
             // clear stdout.
             options.stdout = undefined;
             // run alternative step.
-            steps.splice(i + 1, 0, options.alt);
+            if (Array.isArray(alt)) {
+              steps.splice(i + 1, 0, ...alt);
+            } else {
+              steps.splice(i + 1, 0, alt);
+            }
           } else {
             const errorMessages = ["Param error: Unexpected error."];
             return process.stepError(currentStep, errorMessages);

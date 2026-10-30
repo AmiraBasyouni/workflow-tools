@@ -34,6 +34,7 @@ type Process = {
   program: string;
   args: string[];
   options: ProcessOptions;
+  alt?: Process | Process[];
 };
 
 // execa options + my own internal cache
@@ -42,7 +43,6 @@ type ProcessOptions = {
   stdout?: StdoutStderrOption | "buffer" | "context";
   stderr?: StdoutStderrOption | "buffer" | "context";
   timeout?: Options["timeout"];
-  alt?: Process;
   resolveVariable?: "param" | "context";
 };
 
