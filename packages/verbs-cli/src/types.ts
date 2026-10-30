@@ -38,11 +38,12 @@ type Process = {
 
 // execa options + my own internal cache
 type ProcessOptions = {
-  stderr?: StdoutStderrOption | "buffer" | "context";
-  stdin?: StdinOption | "buffer" | "context" | "param";
+  stdin?: StdinOption | "buffer";
   stdout?: StdoutStderrOption | "buffer" | "context";
+  stderr?: StdoutStderrOption | "buffer" | "context";
   timeout?: Options["timeout"];
   alt?: Process;
+  resolveVariable?: "param" | "context";
 };
 
 // We'll expand the Step type: Step = Process | Prompt | Filesystem.

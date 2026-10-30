@@ -36,7 +36,8 @@ const process = {
     // ITERATE steps:
     for (let i = 0; i < steps.length; i++) {
       const currentStep = steps[i];
-      const { program, args, options } = currentStep;
+      const { program, options } = currentStep;
+      let { args } = currentStep;
 
       try {
         // VALIDATE current step:
@@ -76,15 +77,15 @@ const process = {
           return process.stepError(currentStep, errorMessages);
         }
         // VALIDATE context:
-        // If current step stdin = context but context is empty.
-        if (options.stdin === "context" && context.array.length < 1) {
+        // If current step resolveVariable = context but context is empty.
+        if (options.resolveVariable === "context" && context.array.length < 1) {
           const errorMessages = ["Context error:", "  Context is empty."];
           return process.stepError(currentStep, errorMessages);
         }
         // VALIDATE param:
         // If current step stdin = param and workflow does not require a param, an alt process must exist.
         if (
-          options.stdin === "param" &&
+          options.resolveVariable === "param" &&
           !paramSpec.required &&
           options.alt === undefined
         ) {
@@ -97,22 +98,9 @@ const process = {
           return process.stepError(currentStep, errorMessages);
         }
 
-        // RUN step: ---------------------------------------------------------------------------------
-        if (options?.stdin === "pipe" && prevStep.resultPromise) {
-          // options: if stdin = pipe, use prev-step.
-          currStep.resultPromise = process.runStep(program, args, {
-            ...options,
-          });
-          // STREAM
-          prevStep.resultPromise.pipe(currStep.resultPromise);
-        } else if (options?.stdin === "buffer" && prevStep.result?.stdout) {
-          // options: if stdin = buffer, use prev-step.
-          currStep.resultPromise = process.runStep(program, args, {
-            ...options,
-            stdin: [[prevStep.result.stdout]],
-          });
-        } else if (options?.stdin === "context" && context.array.length > 0) {
-          // options: if stdin = context,
+        // RESOLVE VARIABLES -------------------------------------------------------------------------
+        if (options.resolveVariable === "context" && context.array.length > 0) {
+          // options: if resolveVariable = context,
           // replace CONTEXT_1 with CONTEXT[0], CONTEXT_2 with CONTEXT[1], etc.
           const argsWithContext = process.utils.replaceVariable(
             args,
@@ -124,15 +112,11 @@ const process = {
           if (argsWithContext.error) {
             return argsWithContext.error;
           } else {
-            // run step with resolved context variables.
-            currStep.resultPromise = process.runStep(
-              program,
-              argsWithContext.newArgs,
-              options,
-            );
+            // replace args
+            args = argsWithContext.newArgs;
           }
-        } else if (options?.stdin === "param") {
-          // options: if stdin = param,
+        } else if (options.resolveVariable === "param") {
+          // options: if resolveVariable = param,
           // if params were provided:
           if (context.params.length > 0) {
             // replace PARAM_1 with param[0], PARAM_2 with param[1], etc.
@@ -146,12 +130,8 @@ const process = {
             if (argsWithParams.error) {
               return argsWithParams.error;
             } else {
-              // run step with resolved context variables.
-              currStep.resultPromise = process.runStep(
-                program,
-                argsWithParams.newArgs,
-                options,
-              );
+              // replace args
+              args = argsWithParams.newArgs;
             }
           } else if (context.params.length === 0 && options.alt) {
             // if params were not provided:
@@ -163,6 +143,22 @@ const process = {
             const errorMessages = ["Param error: Unexpected error."];
             return process.stepError(currentStep, errorMessages);
           }
+        }
+
+        // RUN step: ---------------------------------------------------------------------------------
+        if (options.stdin === "pipe" && prevStep.resultPromise) {
+          // options: if stdin = pipe, use prev-step.
+          currStep.resultPromise = process.runStep(program, args, {
+            ...options,
+          });
+          // STREAM
+          prevStep.resultPromise.pipe(currStep.resultPromise);
+        } else if (options.stdin === "buffer" && prevStep.result?.stdout) {
+          // options: if stdin = buffer, use prev-step.
+          currStep.resultPromise = process.runStep(program, args, {
+            ...options,
+            stdin: [[prevStep.result.stdout]],
+          });
         } else {
           // options: if stdin != pipe/buffer, disregard prev-step.
           currStep.resultPromise = process.runStep(program, args, options);
@@ -248,10 +244,7 @@ const process = {
     // stdin: 'inherit', stdout: 'inherit', stderr: 'inherit', direct everything to the terminal.
     const execaOptions: Options = {
       ...stepOptions,
-      stdin:
-        stdin === "buffer" || stdin === "context" || stdin === "param"
-          ? undefined
-          : stdin,
+      stdin: stdin === "buffer" ? undefined : stdin,
       stdout: stdout === "buffer" || stdout === "context" ? undefined : stdout,
       stderr: stderr === "buffer" || stderr === "context" ? undefined : stderr,
       reject: false,
