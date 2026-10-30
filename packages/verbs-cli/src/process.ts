@@ -20,11 +20,11 @@ const process = {
     const prevStep: {
       result: Result | undefined;
       resultPromise: ResultPromise | undefined;
-      options: StepOptions | undefined;
+      options: StepOptions;
     } = {
       result: undefined,
       resultPromise: undefined,
-      options: undefined,
+      options: {},
     };
 
     // CACHE current step:
@@ -52,23 +52,23 @@ const process = {
 
         // VALIDATE options (stdin/stdout):
         // If current step stdin = pipe but prev-step stdout != pipe, halt with error.
-        if (options?.stdin === "pipe" && prevStep?.options?.stdout !== "pipe") {
+        if (options.stdin === "pipe" && prevStep.options.stdout !== "pipe") {
           const errorMessages = [
             "Pipe error:",
-            `  Previous step stdout: ${prevStep.options?.stdin}`,
-            `  Current step stdin: ${currentStep.options?.stdin}\n`,
+            `  Previous step stdout: ${prevStep.options.stdin}`,
+            `  Current step stdin: ${currentStep.options.stdin}\n`,
             `  Expected: "Previous step stdout: pipe"`,
           ];
 
           return process.stepError(currentStep, errorMessages);
-        } else if (options?.stdin === "pipe" && !prevStep?.resultPromise) {
+        } else if (options.stdin === "pipe" && !prevStep?.resultPromise) {
           // If current step stdin = pipe & streams, prev-step should have returned a promise.
           const errorMessages = [
             "Pipe error:",
             `  Previous step:`,
-            `    stdout: ${prevStep.options?.stdout}.`,
+            `    stdout: ${prevStep.options.stdout}.`,
             `  Current step:`,
-            `    stdin: ${currentStep.options?.stdin}.`,
+            `    stdin: ${currentStep.options.stdin}.`,
             `  Expected:`,
             //`    Previous step: stdoutPipe: "stream"`,
             `    previous step to return a promise.`,
@@ -77,14 +77,14 @@ const process = {
         }
         // VALIDATE context:
         // If current step stdin = context but context is empty.
-        if (options?.stdin === "context" && context.array.length < 1) {
+        if (options.stdin === "context" && context.array.length < 1) {
           const errorMessages = ["Context error:", "  Context is empty."];
           return process.stepError(currentStep, errorMessages);
         }
         // VALIDATE param:
         // If current step stdin = param and workflow does not require a param, an alt process must exist.
         if (
-          options?.stdin === "param" &&
+          options.stdin === "param" &&
           !paramSpec.required &&
           options.alt === undefined
         ) {
@@ -170,7 +170,7 @@ const process = {
         // CACHE options:
         prevStep.options = options;
 
-        const stdout = options?.stdout;
+        const stdout = options.stdout;
         const stdoutIsStreaming = stdout === "pipe";
         if (!stdoutIsStreaming && currStep.resultPromise) {
           // RESOLVE PROMISE (result-promise):
@@ -205,7 +205,7 @@ const process = {
         }
 
         // CACHE step: ---------------------------------------------------------------------------------
-        if (options?.stdout === "pipe") {
+        if (options.stdout === "pipe") {
           prevStep.result = undefined;
           prevStep.resultPromise = currStep.resultPromise;
         } else {
@@ -214,7 +214,7 @@ const process = {
         }
 
         // STORE CONTEXT
-        if (options?.stdout === "context") {
+        if (options.stdout === "context") {
           const result = currStep.result?.stdout;
           if (typeof result === "string") {
             context.array.push(result);

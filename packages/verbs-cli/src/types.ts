@@ -33,7 +33,7 @@ type Process = {
   description?: string;
   program: string;
   args: string[];
-  options?: ProcessOptions;
+  options: ProcessOptions;
 };
 
 // execa options + my own internal cache
