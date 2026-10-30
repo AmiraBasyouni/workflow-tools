@@ -20,6 +20,7 @@ const { positionals, values: flagValues } = parseArgs({
     regex: { type: "string" },
     null: { type: "boolean", default: false },
     answer: { type: "string" },
+    "no-hint": { type: "boolean", default: false },
     version: { type: "boolean", short: "v", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
@@ -82,7 +83,11 @@ const message = positionals[0] || "Enter input: ";
 
 try {
   // RUN PROMPTING SESSION
-  const sessionResponse = await runPromptingSession(message, schema);
+  const sessionResponse = await runPromptingSession(
+    message,
+    schema,
+    flagValues["no-hint"],
+  );
   // STDOUT RESPONSE
   output(sessionResponse, flagValues.null);
 } catch (e) {

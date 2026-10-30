@@ -5,13 +5,15 @@ import { SessionResponse } from "./types.js";
 async function runPromptingSession(
   prompt: string,
   schema: ValidationSchema,
+  noHint: boolean,
 ): Promise<SessionResponse> {
-
   // START INTERACTION
   const { rl, ask } = interaction.start();
 
   // Let the user know right away that they aren't trapped.
-  console.error("(Type 'exit' or press Ctrl+C at any time to cancel)\n");
+  if (noHint === false) {
+    console.error("(Type 'exit' or press Ctrl+C at any time to cancel)\n");
+  }
 
   while (true) {
     // PROMPT USER
@@ -37,7 +39,6 @@ async function runPromptingSession(
       validator.printValidationErrors(result.errors);
     }
   }
-
 }
 
 export default runPromptingSession;

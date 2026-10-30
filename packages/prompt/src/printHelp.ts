@@ -30,6 +30,9 @@ Options:
 
   --answer
       Validate answer. Skips prompting if answer is valid.
+
+  --no-hint
+      Hide the message: "Type 'exit' or press Ctrl+C at any time to cancel".
 `);
 }
 
