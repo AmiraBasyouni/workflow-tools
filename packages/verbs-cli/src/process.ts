@@ -1,4 +1,4 @@
-import { Step, StepOptions, Context, ParamSpec } from "./types.js";
+import { Step, StepOptions, Context } from "./types.js";
 import { Result, ResultPromise } from "execa";
 
 import { execa, Options } from "execa";
@@ -7,15 +7,7 @@ import verify from "./validation.js";
 type Response = { successful: boolean; errorMessages?: string[] };
 
 const process = {
-  async runSteps(
-    steps: Step[],
-    paramSpec: ParamSpec | undefined,
-    context: Context,
-  ): Promise<Response> {
-    if (!paramSpec) {
-      paramSpec = { count: 0, required: false };
-    }
-
+  async runSteps(steps: Step[], context: Context): Promise<Response> {
     // CACHE previous step:
     const prevStep: {
       result: Result | undefined;
@@ -83,17 +75,13 @@ const process = {
           return process.stepError(currentStep, errorMessages);
         }
         // VALIDATE param:
-        // If current step stdin = param and workflow does not require a param, an alt process must exist.
-        if (
-          options.resolveVariable === "param" &&
-          !paramSpec.required &&
-          alt === undefined
-        ) {
+        // If current step contains a param variable, a fallback process must exist.
+        if (options.resolveVariable === "param" && alt === undefined) {
           const errorMessages = [
             "Param error:",
-            "  when stdin is param and param is not required, step must contain an alternative.",
-            "  include an alternative step in options: { alt }.",
-            "  when user chooses not to provide a param, the alternative step will run.",
+            "  This step uses a param variable, but does not include a fallback.",
+            "  include an alternative process in options: { alt }.",
+            "  when user fails to provide a param, the alternative steps will run.",
           ];
           return process.stepError(currentStep, errorMessages);
         }

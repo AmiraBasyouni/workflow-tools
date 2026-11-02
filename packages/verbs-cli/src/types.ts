@@ -8,11 +8,14 @@ type Segment = {
 type Workflow = {
   name: string;
   requirements: Requirement[];
-  paramSpec?: ParamSpec;
+  paramSpec: ParamSpec;
   steps: Process[];
 };
 
-type ParamSpec = { count: number; required: boolean };
+type ParamSpec =
+  | { type: "range"; min: number; max: number | null }
+  | { type: "oneOf"; values: number[] }
+  | { type: "exact"; value: number };
 
 type Context = {
   params: string[];

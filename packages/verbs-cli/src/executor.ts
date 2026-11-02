@@ -16,11 +16,10 @@ async function executor({
     workflow,
     context,
   });
-  const paramStatus = verify.params(
-    (workflow.paramSpec ??= { count: 0, required: false }),
-    (context.params ??= []),
-    workflow.name,
-  );
+  const paramSpecStatus = verify.paramSpec(workflow.paramSpec);
+  const paramStatus = paramSpecStatus.valid
+    ? verify.params(workflow.paramSpec, (context.params ??= []))
+    : { valid: false, error: { messages: ["Invalid paramSpec."] } };
 
   // ERROR HANDLING
   if (requirementStatus.error) {
@@ -30,6 +29,16 @@ async function executor({
       workflow.name,
     );
     console.error(errorMessage);
+    process.exit(1);
+  }
+
+  if (paramSpecStatus.error) {
+    console.error("\nError: Failed to run workflow.");
+    console.error("\nInvalid parameter specification.");
+    paramSpecStatus.error.messages.forEach((messageArray) => {
+      const errorList = format.bulletList(messageArray, 2);
+      console.error(errorList);
+    });
     process.exit(1);
   }
 

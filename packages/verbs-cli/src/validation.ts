@@ -43,7 +43,6 @@ const verify = {
     const promises = workflow.requirements.map(async (requirement) => {
       const response = await process.runSteps(
         requirement.verificationSteps,
-        workflow.paramSpec,
         context,
       );
       if (response.successful) {
@@ -145,53 +144,175 @@ const verify = {
       return { valid: true, errors };
     }
   },
-  params(
-    workflowParamSpec: ParamSpec,
-    providedParams: string[],
-    workflowName: string,
-  ) {
-    // VALIDATE params:
-    if (providedParams.length > 0 && workflowParamSpec.count === 0) {
+  paramSpec(paramSpec: {
+    type?: unknown;
+    min?: unknown;
+    max?: unknown;
+    value?: unknown;
+    values?: unknown;
+  }): {
+    valid: boolean;
+    error?: { messages: string[][]; flags: Record<string, boolean> };
+  } {
+    const errorFlags = {
+      invalidParamSpec: false,
+      invalidType: false,
+      invalidMin: false,
+      invalidMax: false,
+      invalidValues: false,
+      invalidValue: false,
+    };
+    const errorMessages: string[][] = [];
+    // VALIDATE shape:
+    // paramSpec
+    if (!paramSpec) {
+      errorFlags.invalidParamSpec = true;
+      errorMessages.push([
+        `Missing paramSpec (param specification).`,
+        `Expected: object with property type.`,
+        `Received: ${JSON.stringify(paramSpec)}`,
+      ]);
       return {
         valid: false,
-        error: {
-          messages: [
-            `This workflow does not accept params.`,
-            `Expected ${workflowParamSpec.count} params, received ${providedParams.length}.`,
-            `Run workflow without params: verb ${workflowName}`,
-          ],
-        },
+        error: { messages: errorMessages, flags: errorFlags },
       };
-    } else if (
-      providedParams.length > 0 &&
-      workflowParamSpec.count != providedParams.length
-    ) {
+    }
+
+    const { type, min, max, value, values } = paramSpec;
+    // type
+    const isString = (t: unknown) => typeof t === "string";
+    const isNumber = (n: unknown) => typeof n === "number";
+    const isInteger = (n: unknown) =>
+      typeof n === "number" && Number.isInteger(n);
+    const correctValue = (v: string) =>
+      v === "range" || v === "oneOf" || v === "exact";
+    if (!isString(type) || (isString(type) && !correctValue(type))) {
+      errorFlags.invalidType = true;
+      errorMessages.push([
+        `Expected property: type.`,
+        `Permissible types: "range", "oneOf", "exact".`,
+        `Received type: ${JSON.stringify(paramSpec.type)}`,
+      ]);
+    }
+    if (type === "range") {
+      // min
+      if (!isInteger(min) || (isNumber(min) && min < 0)) {
+        errorFlags.invalidMin = true;
+        errorMessages.push([
+          `Received type: "range", which requires property: min.`,
+          `Expected min: an integer equal to or greater than 0.`,
+          `Received min: ${JSON.stringify(paramSpec.min)}`,
+        ]);
+      }
+      // max
+      if (
+        (!isInteger(max) && max !== null) ||
+        (isNumber(min) && isNumber(max) && max < min) ||
+        (isNumber(max) && max < 0)
+      ) {
+        errorFlags.invalidMax = true;
+        errorMessages.push([
+          `Received type: "range", which requires property: max.`,
+          `Expected max: an integer greater than or equal to min, or null to indicate infinite range.`,
+          `Received max: ${JSON.stringify(paramSpec.max)}`,
+          `Received min: ${JSON.stringify(paramSpec.min)}`,
+        ]);
+      }
+    }
+    if (type === "oneOf") {
+      const validValues =
+        Array.isArray(values) && values.every((v) => isInteger(v) && v >= 0);
+      // values
+      if (!validValues || (Array.isArray(values) && values.length === 0)) {
+        errorFlags.invalidValues = true;
+        errorMessages.push([
+          `Received type: "oneOf", which requires property: values.`,
+          `Expected values: an array of integers greater than or equal to 0.`,
+          `Received values: ${JSON.stringify(paramSpec.values)}`,
+        ]);
+      }
+    }
+    if (type === "exact") {
+      // value
+      if (!isInteger(value) || (isNumber(value) && value < 0)) {
+        errorFlags.invalidValue = true;
+        errorMessages.push([
+          `Received type: "exact", which requires property: value.`,
+          `Expected value: an integer greater than or equal to 0.`,
+          `Received value: ${JSON.stringify(paramSpec.value)}`,
+        ]);
+      }
+    }
+    // return validity
+    if (errorMessages.length > 0) {
       return {
         valid: false,
-        error: {
-          messages: [
-            `This workflow can run with or without params.`,
-            `Expected 0 or ${workflowParamSpec.count} params, received ${providedParams.length}.`,
-            `To run workflow without params, use: verb ${workflowName}`,
-          ],
-        },
-      };
-    } else if (
-      providedParams.length === 0 &&
-      workflowParamSpec.required === true
-    ) {
-      return {
-        valid: false,
-        error: {
-          messages: [
-            `This workflow requires params.`,
-            `Expected ${workflowParamSpec.count} params, received ${providedParams.length}.`,
-          ],
-        },
+        error: { messages: errorMessages, flags: errorFlags },
       };
     } else {
       return { valid: true };
     }
+  },
+  params(
+    paramSpec: ParamSpec,
+    params: string[],
+  ): { valid: boolean; error?: { messages: string[] } } {
+    // VALIDATE content:
+    if (paramSpec.type === "range") {
+      if (
+        (paramSpec.max && params.length > paramSpec.max) ||
+        params.length < paramSpec.min
+      ) {
+        return {
+          valid: false,
+          error: {
+            messages: [
+              `Expected at least ${paramSpec.min} and at most ${paramSpec.max} params.`,
+              `Received ${params.length} params.`,
+            ],
+          },
+        };
+      } else {
+        return { valid: true };
+      }
+    } else if (paramSpec.type === "oneOf") {
+      if (!paramSpec.values.includes(params.length)) {
+        return {
+          valid: false,
+          error: {
+            messages: [
+              `Expected number of params to be one of the following: ${JSON.stringify(paramSpec.values)}.`,
+              `Received ${params.length} params.`,
+            ],
+          },
+        };
+      } else {
+        return { valid: true };
+      }
+    } else if (paramSpec.type === "exact") {
+      if (params.length !== paramSpec.value) {
+        return {
+          valid: false,
+          error: {
+            messages: [
+              `Expected exactly ${paramSpec.value} params.`,
+              `Received ${params.length} params.`,
+            ],
+          },
+        };
+      } else {
+        return { valid: true };
+      }
+    }
+    return {
+      valid: false,
+      error: {
+        messages: [
+          `Expected type "range", "oneOf", or "exact".`,
+          `Received ${paramSpec}.`,
+        ],
+      },
+    };
   },
 };
 
