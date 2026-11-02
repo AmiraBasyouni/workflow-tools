@@ -71,7 +71,7 @@ const verify = {
     }
   },
   step(step: unknown) {
-    const errors = {
+    const errorFlags = {
       invalidStep: false,
       invalidType: false,
       invalidProgram: false,
@@ -83,9 +83,9 @@ const verify = {
     const errorMessages: string[] = [];
     // Verify type of step:
     if (!step || typeof step != "object") {
-      errors.invalidStep = true;
+      errorFlags.invalidStep = true;
       errorMessages.push(`invalid step: ${step}`);
-      return { valid: false, errors, errorMessages };
+      return { valid: false, errors: errorFlags, errorMessages };
     }
     const { type, program, args, options } = step as {
       type?: unknown;
@@ -96,52 +96,50 @@ const verify = {
     // Verify step type:
     if (!type || typeof type != "string") {
       errorMessages.push(`invalid type: ${type}`);
-      errors.invalidType = true;
+      errorFlags.invalidType = true;
     }
     // Verify step program:
     if (!program || typeof program != "string") {
       errorMessages.push(`invalid program: ${program}`);
-      errors.invalidProgram = true;
+      errorFlags.invalidProgram = true;
     }
     // Verify step args:
     if (!args || !Array.isArray(args)) {
       errorMessages.push(`invalid arguments: ${args}`);
-      errors.invalidArguments = true;
+      errorFlags.invalidArguments = true;
     }
     // Verify step options
-    if (options || options === null) {
-      // reject wrong types and null
-      if (typeof options != "object" || options === null) {
-        errorMessages.push(`invalid options: ${options}`);
-        errors.invalidOptions = true;
-      } else {
-        // for verify options: pipe and timeout,
-        const { timeout, pipe } = options as {
-          timeout?: unknown;
-          pipe?: unknown;
-        };
-        if (timeout === null || (timeout && typeof timeout != "number")) {
-          errorMessages.push(`invalid timeout: ${timeout}`);
-          errors.invalidTimeout = true;
-        }
-        if (pipe || pipe === null) {
-          switch (pipe) {
-            case "stream":
-            case "buffer":
-            case undefined:
-              break;
-            default:
-              errorMessages.push(`invalid pipe option: ${pipe}`);
-              errors.invalidPipeOption = true;
-          }
+    if (!options || typeof options != "object") {
+      errorMessages.push(`invalid options: ${options}`);
+      errorFlags.invalidOptions = true;
+    }
+    if (options) {
+      // Verify options: pipe and timeout,
+      const { timeout, pipe } = options as {
+        timeout?: unknown;
+        pipe?: unknown;
+      };
+      if (timeout === null || (timeout && typeof timeout != "number")) {
+        errorMessages.push(`invalid timeout: ${timeout}`);
+        errorFlags.invalidTimeout = true;
+      }
+      if (pipe || pipe === null) {
+        switch (pipe) {
+          case "stream":
+          case "buffer":
+          case undefined:
+            break;
+          default:
+            errorMessages.push(`invalid pipe option: ${pipe}`);
+            errorFlags.invalidPipeOption = true;
         }
       }
     }
     // return validity
     if (errorMessages.length > 0) {
-      return { valid: false, errors, errorMessages };
+      return { valid: false, errorFlags, errorMessages };
     } else {
-      return { valid: true, errors };
+      return { valid: true, errorFlags };
     }
   },
   paramSpec(paramSpec: {
