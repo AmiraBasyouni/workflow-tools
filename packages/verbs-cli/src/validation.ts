@@ -256,9 +256,10 @@ const verify = {
     params: string[],
   ): { valid: boolean; error?: { messages: string[] } } {
     // VALIDATE content:
+    const isNumber = (n: unknown) => typeof n === "number";
     if (paramSpec.type === "range") {
       if (
-        (paramSpec.max && params.length > paramSpec.max) ||
+        (isNumber(paramSpec.max) && params.length > paramSpec.max) ||
         params.length < paramSpec.min
       ) {
         return {

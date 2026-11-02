@@ -131,6 +131,7 @@ const process = {
             } else {
               steps.splice(i + 1, 0, alt);
             }
+            continue;
           } else {
             const errorMessages = ["Param error: Unexpected error."];
             return process.stepError(currentStep, errorMessages);
