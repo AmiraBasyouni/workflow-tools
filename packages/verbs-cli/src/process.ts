@@ -28,7 +28,7 @@ const process = {
     // ITERATE steps:
     for (let i = 0; i < steps.length; i++) {
       const currentStep = steps[i];
-      const { program, options, alt } = currentStep;
+      const { program, options, alt, resolveVariable } = currentStep;
       let { args } = currentStep;
 
       try {
@@ -70,13 +70,13 @@ const process = {
         }
         // VALIDATE context:
         // If current step resolveVariable = context but context is empty.
-        if (options.resolveVariable === "context" && context.array.length < 1) {
+        if (resolveVariable === "context" && context.array.length < 1) {
           const errorMessages = ["Context error:", "  Context is empty."];
           return process.stepError(currentStep, errorMessages);
         }
         // VALIDATE param:
         // If current step contains a param variable, a fallback process must exist.
-        if (options.resolveVariable === "param" && alt === undefined) {
+        if (resolveVariable === "param" && alt === undefined) {
           const errorMessages = [
             "Param error:",
             "  This step uses a param variable, but does not include a fallback.",
@@ -87,7 +87,7 @@ const process = {
         }
 
         // RESOLVE VARIABLES -------------------------------------------------------------------------
-        if (options.resolveVariable === "context" && context.array.length > 0) {
+        if (resolveVariable === "context" && context.array.length > 0) {
           // options: if resolveVariable = context,
           // replace CONTEXT_1 with CONTEXT[0], CONTEXT_2 with CONTEXT[1], etc.
           const argsWithContext = process.utils.replaceVariable(
@@ -103,7 +103,7 @@ const process = {
             // replace args
             args = argsWithContext.newArgs;
           }
-        } else if (options.resolveVariable === "param") {
+        } else if (resolveVariable === "param") {
           // options: if resolveVariable = param,
           // if params were provided:
           if (context.params.length > 0) {

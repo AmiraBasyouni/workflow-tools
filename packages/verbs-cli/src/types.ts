@@ -38,6 +38,7 @@ type Process = {
   args: string[];
   options: ProcessOptions;
   alt?: Process | Process[];
+  resolveVariable?: "param" | "context";
 };
 
 // execa options + my own internal cache
@@ -46,7 +47,6 @@ type ProcessOptions = {
   stdout?: StdoutStderrOption | "buffer" | "context";
   stderr?: StdoutStderrOption | "buffer" | "context";
   timeout?: Options["timeout"];
-  resolveVariable?: "param" | "context";
 };
 
 // We'll expand the Step type: Step = Process | Prompt | Filesystem.
