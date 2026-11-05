@@ -23,7 +23,7 @@ const hasOnlyOneArg = args.length === 1;
 if (flagValues.version) {
   if (!hasOnlyOneArg) {
     console.error("error: --version must be used by itself.");
-    process.exit(1);
+    process.exit(2);
   }
   console.log(`@amirab/switch ${packageJson.version}`);
   process.exit(0);
@@ -32,7 +32,7 @@ if (flagValues.version) {
 if (flagValues.help) {
   if (!hasOnlyOneArg) {
     console.error("error: --help must be used by itself.");
-    process.exit(1);
+    process.exit(2);
   }
   printHelp();
   process.exit(0);
@@ -55,7 +55,7 @@ if (cases.length !== outputs.length) {
     "  Expected format: <input> <case_1> <output_1> <case_2> <output_2> ...",
   ];
   errorMessages.forEach((m) => console.error(m));
-  process.exit(1);
+  process.exit(2);
 }
 
 // RESOLVE SWITCH CASE
