@@ -6,3 +6,4 @@ A collection of CLI (command-line interface) tools for building and running work
 
 - `verbs-cli` — a CLI tool for running Git workflows.
 - `@amirab/prompt` — a minimal CLI prompting tool.
+- `@amirab/switch` — a minimal CLI tool for matching inputs against cases.
