@@ -25,6 +25,10 @@ Options:
   --regex <pattern>
       Regular expression used to validate string.
 
+  --regex-message <error-message>
+      Custom error message displayed when the response fails regex validation.
+      Default: "Must match format: <pattern>".
+
   --null
       Terminate output with a NUL character instead of a newline.
 

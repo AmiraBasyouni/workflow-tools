@@ -6,6 +6,7 @@ type FlagValues = {
   min?: string | undefined;
   max?: string | undefined;
   regex?: string | undefined;
+  "regex-message"?: string | undefined;
   null?: boolean;
 };
 
@@ -52,7 +53,11 @@ const validator = {
     if (flagValues.regex)
       try {
         const rx = new RegExp(flagValues.regex);
-        schema = schema.regex(rx, `Must match format: ${flagValues.regex}`);
+        schema = schema.regex(
+          rx,
+          flagValues["regex-message"] ??
+            `Must match format: ${flagValues.regex}`,
+        );
       } catch {
         throw new Error(
           `Invalid regular expression provided to --regex: "${flagValues.regex}"`,

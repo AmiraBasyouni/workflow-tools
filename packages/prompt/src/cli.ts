@@ -18,6 +18,7 @@ const { positionals, values: flagValues } = parseArgs({
     min: { type: "string" },
     max: { type: "string" },
     regex: { type: "string" },
+    "regex-message": { type: "string" },
     null: { type: "boolean", default: false },
     answer: { type: "string" },
     "no-hint": { type: "boolean", default: false },
