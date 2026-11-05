@@ -1,0 +1,38 @@
+{
+  "name": "@amirab/switch",
+  "version": "0.0.1",
+  "description": "Select an output based on a matching input case.",
+  "keywords": [
+    "switch",
+    "match",
+    "select",
+    "case",
+    "mapping",
+    "cli",
+    "utility",
+    "conditional"
+  ],
+  "homepage": "https://github.com/AmiraBasyouni/workflow-tools#readme",
+  "bugs": {
+    "url": "https://github.com/AmiraBasyouni/workflow-tools/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmiraBasyouni/workflow-tools.git",
+    "directory": "packages/switch"
+  },
+  "bin": {
+    "switch": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "author": "Amira Basyouni",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "tsx --test ./tests/*.test.ts",
+    "start": "tsx ./src/cli.ts"
+  }
+}

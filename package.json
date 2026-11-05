@@ -10,11 +10,14 @@
     "build": "npm run build --workspaces",
     "build-verb": "npm run build --workspace=verbs-cli",
     "build-prompt": "npm run build --workspace=@amirab/prompt",
+    "build-switch": "npm run build --workspace=@amirab/switch",
     "test": "npm run test --workspaces",
-    "test-prompt": "npm run test --workspace=@amirab/prompt",
     "test-verb": "npm run test --workspace=verbs-cli",
+    "test-prompt": "npm run test --workspace=@amirab/prompt",
+    "test-switch": "npm run test --workspace=@amirab/switch",
     "verb": "npm run build-verb && node packages/verbs-cli/dist/cli.js",
-    "prompt": "npm run build-prompt && node packages/prompt/dist/cli.js"
+    "prompt": "npm run build-prompt && node packages/prompt/dist/cli.js",
+    "switch": "npm run build-switch && node packages/switch/dist/cli.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
